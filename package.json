@@ -1,0 +1,16 @@
+{
+  "name": "line32-next-departures",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Petite app React pour afficher les 2 prochains départs de la ligne 32 à l'arrêt Mały Kack Strzelców 01.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.0",
+    "node-fetch": "^2.7.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0"
+  }
+}
+
