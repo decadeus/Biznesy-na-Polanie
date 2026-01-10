@@ -23,6 +23,15 @@
       crossorigin
       src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"
     ></script>
+    <!-- Supabase client (auth Facebook via Supabase) -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+      // Client Supabase global pour l'app (clé publique uniquement)
+      window.supabaseClient = supabase.createClient(
+        "https://inekvpbycchoflnotgcr.supabase.co",
+        "sb_publishable_Qt_bSHNxjuvLL3FQr1Ullw_zUTLv3hv"
+      );
+    </script>
   </head>
   <body>
     <div id="root" class="dashboard"></div>
@@ -32,6 +41,8 @@
     <script src="components/ProfileBar.js"></script>
     <script src="components/ResidenceCard.js"></script>
     <script src="components/ResidenceHero.js"></script>
+    <script src="components/CardAuthorHeader.js"></script>
+    <script src="components/OnboardingStep.js"></script>
     <script src="modals/AnnouncementModal.js"></script>
     <script src="components/ClassifiedsRealEstate.js"></script>
     <script src="components/ClassifiedsNeighbors.js"></script>
@@ -40,6 +51,11 @@
     <script src="components/PollsSection.js"></script>
     <script src="components/PollsQuickCard.js"></script>
     <script src="components/ShopsQuickCard.js"></script>
+    <script src="components/AdminNav.js"></script>
+    <script src="components/ModeratorsCard.js"></script>
+    <script src="components/MembersTable.js"></script>
+    <script src="components/StatsOverview.js"></script>
+    <script src="components/AdminPendingUsers.js"></script>
     <script src="components/ReportsSection.js"></script>
     <script src="components/NeighborServicesSection.js"></script>
     <script src="forms/ClassifiedsRealEstateForm.js"></script>
@@ -51,6 +67,7 @@
     <script src="modals/ClassifiedsModal.js"></script>
     <script src="modals/EventModal.js"></script>
     <script src="modals/ShopModal.js"></script>
+    <script src="modals/AddMemberModal.js"></script>
     <script src="modals/PollModal.js"></script>
     <script src="modals/ReportModal.js"></script>
     <script src="modals/NeighborServiceModal.js"></script>

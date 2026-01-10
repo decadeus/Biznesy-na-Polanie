@@ -1,55 +1,85 @@
-## Petite app React – Ligne 32 (Mały Kack Strzelców 01)
+## Petite app résidence – Ligne 32 (Mały Kack Strzelców 01)
 
-Cette mini‑app affiche **les 2 prochains départs** de la **ligne 32** à l'arrêt **Mały Kack Strzelców 01** dans un petit cadre pensé pour ton iPhone.
-
-Elle est écrite en **React** mais ne nécessite **aucun build** ni installation de Node pour simplement l'utiliser.
+Cette mini‑app affiche les horaires de bus, la météo et différentes sections de vie de résidence (annonces, sondages, signalements…) via une interface React sans build.
 
 ---
 
-### Comment tester sur ton iPhone
+### Démarrer le backend local
 
-1. Sur ton Mac, ouvre le fichier `index.html` dans un navigateur (Safari par exemple) pour vérifier que tout s'affiche bien.
-2. Pour l'avoir sur ton iPhone, tu as plusieurs options :
-   - héberger le dossier (par exemple avec un petit serveur local ou un hébergement statique type Netlify / GitHub Pages),
-   - ou ouvrir directement le fichier via un partage (AirDrop + ouvrir dans Safari).
-3. Sur ton iPhone, ouvre la page dans **Safari**, puis :
-   - appuie sur le bouton **Partager**,
-   - choisis **« Ajouter à l'écran d'accueil »**.
+1. Installer les dépendances Node (une seule fois) :
 
-Tu auras alors une “icône d'app” qui ouvre directement ce petit écran.
-
----
-
-### Où mettre les vrais horaires
-
-Dans `index.html`, cherche la partie marquée :
-
-```js
-const WEEKDAY_DEPARTURES = [
-  // Exemple : "05:10", "05:30", "05:50", ...
-];
-
-const WEEKEND_DEPARTURES = [
-  // ...
-];
+```bash
+npm install
 ```
 
-Remplace les valeurs d'exemple par **les vrais horaires de la ligne 32** pour l'arrêt **Mały Kack Strzelców 01** tels qu'ils apparaissent sur la page `https://zkmgdynia.pl/linie/32`.
+2. Créer un fichier `.env` à la racine avec par exemple :
 
-Format attendu : **"HH:MM" en 24h**, par exemple `"07:05"`, `"13:40"`, etc.
+```bash
+GROUP_ACCESS_CODE=0000
+SUPABASE_URL=https://inekvpbycchoflnotgcr.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=VOTRE_CLE_SERVICE_ROLE_ICI
+```
 
-L'app calcule automatiquement, en fonction de l'heure actuelle, **les 2 prochains départs** (et met à jour toutes les 30 secondes).
+3. Lancer le serveur Express :
+
+```bash
+npm start
+```
+
+Le serveur écoute par défaut sur `http://localhost:3001` et sert `index.html` + les APIs (bus, météo, annonces, auth…).
 
 ---
 
-### Limitation importante
+### Flux d’authentification Facebook
 
-La page officielle `https://zkmgdynia.pl/linie/32` ne fournit pas d'API publique simple avec CORS pour récupérer automatiquement les horaires depuis le navigateur.
+- L’accueil publique affiche un bouton **« Se connecter avec Facebook »**.
+- Clic → redirection vers le **Facebook Login** (`/auth/facebook`), puis retour sur `http://localhost:3001/auth/facebook/callback`.
+- Au retour :
+  - si l’utilisateur est **nouveau** : un compte local est créé avec `status="pending"` et l’app affiche l’écran **Première connexion** (composant `OnboardingStep`),
+  - si l’utilisateur existe déjà :
+    - `status="active"` → accès direct à la page connectée,
+    - `status="pending"` avec `facebookProfileUrl` renseigné → écran “En attente de validation modérateur”,
+    - `status="blocked"` → écran “Compte bloqué”.
 
-Pour rester simple (et utilisable uniquement pour toi), cette app :
+La session est stockée sous forme de cookie `sessionToken` géré en mémoire côté serveur (prototype local).
 
-- **ne scrape pas le site en direct**,
-- mais repose sur **une liste d'horaires que tu renseignes une fois** dans le code.
+---
 
-Si tu veux aller plus loin (par exemple un petit backend Node qui va lire automatiquement les données du site et renvoyer juste les 2 prochains départs au frontend React), on peut aussi mettre ça en place ensuite.
+### Première connexion / code d’accès groupe
+
+- Lors de la **première connexion** (nouvel utilisateur Facebook), l’app affiche le composant `OnboardingStep` qui demande :
+  - le **code d’accès** partagé uniquement dans le groupe Facebook de la résidence,
+  - l’**URL du profil Facebook** de la personne.
+- Ces informations sont envoyées à `POST /api/onboarding/complete`.
+- Si le code = `GROUP_ACCESS_CODE`, le compte reste `status="pending"` mais est marqué avec `facebookProfileUrl`, et l’utilisateur voit un message “En attente de validation modérateur”.
+
+---
+
+### Interface modérateurs – validation des comptes
+
+- Les utilisateurs avec `role="moderator"` ou `role="admin"` voient, dans la navigation admin, l’onglet **« Validations comptes »**.
+- Cet onglet affiche le composant `AdminPendingUsers` qui consomme :
+  - `GET /api/admin/pending-users` pour la liste des comptes `status="pending"`,
+  - `POST /api/admin/users/:id/approve` pour activer un compte,
+  - `POST /api/admin/users/:id/reject` pour le bloquer.
+- Chaque carte affiche :
+  - la photo de profil,
+  - le nom,
+  - la date de demande,
+  - un lien **« Voir le profil Facebook »** (nouvel onglet),
+  - deux boutons **Accepter / Refuser** qui mettent à jour la liste sans rechargement.
+
+---
+
+### Intégration avec le reste de l’app
+
+- Le frontend interroge `GET /api/me` au montage de `App` pour savoir si quelqu’un est connecté et dans quel état :
+  - `authenticated=false` → page d’accueil publique + bouton “Se connecter avec Facebook”,
+  - `status="pending"` + pas de `facebookProfileUrl` → écran de première connexion (code groupe),
+  - `status="pending"` + `facebookProfileUrl` renseigné → écran d’attente modérateur,
+  - `status="blocked"` → message de compte bloqué,
+  - `status="active"` → accès complet à la page connectée existante (widgets, annonces, etc.).
+- La barre de profil (`ProfileBar`) utilise par défaut `currentUser.name` et `currentUser.avatarUrl` provenant de Facebook, avec la possibilité de personnaliser ensuite un surnom / avatar local (persisté en `localStorage`).
+
+Les autres endpoints existants (bus, météo, annonces, événements, sondages, signalements…) restent inchangés et continuent de fonctionner comme avant.
 

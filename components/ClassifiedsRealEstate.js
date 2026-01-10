@@ -1,7 +1,7 @@
 // Composant ClassifiedsRealEstate : liste des annonces immobilières
 
 function ClassifiedsRealEstate(props) {
-  const { classifieds, classifiedsError, onSelect } = props;
+  const { classifieds, classifiedsError, onSelect, onOpenForm } = props;
   const immobiliers = (classifieds || []).filter(
     (c) => c.type === "immobilier"
   );
@@ -26,6 +26,12 @@ function ClassifiedsRealEstate(props) {
             className: "classified-item",
             onClick: () => onSelect && onSelect(item)
           },
+          e(CardAuthorHeader, {
+            name: item.authorName,
+            avatarUrl: item.authorAvatarUrl,
+            role: item.authorRole,
+            createdAt: item.createdAt
+          }),
           item.imageUrl &&
             e("div", {
               className: "classified-thumb",
@@ -72,7 +78,17 @@ function ClassifiedsRealEstate(props) {
         "p",
         null,
         "Ventes, locations et colocations dans la résidence."
-      )
+      ),
+      onOpenForm &&
+        e(
+          "button",
+          {
+            type: "button",
+            onClick: onOpenForm,
+            className: "page-section-cta"
+          },
+          "Publier une annonce immo"
+        )
     ),
     classifiedsError &&
       e(

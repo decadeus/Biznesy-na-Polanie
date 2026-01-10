@@ -20,6 +20,13 @@ function EventsSection(props) {
         e(
           "article",
           { key: ev.id, className: "classified-item" },
+          e(CardAuthorHeader, {
+            name: ev.authorName,
+            avatarUrl: ev.authorAvatarUrl,
+            role: ev.authorRole,
+            // Pour les événements, on affiche plutôt la date de l'événement
+            createdAt: ev.date || ev.createdAt
+          }),
           ev.imageUrl &&
             e("div", {
               className: "classified-thumb",

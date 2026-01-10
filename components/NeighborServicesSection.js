@@ -21,6 +21,12 @@ function NeighborServicesSection(props) {
         e(
           "article",
           { key: s.id, className: "classified-item" },
+          e(CardAuthorHeader, {
+            name: s.authorName,
+            avatarUrl: s.authorAvatarUrl,
+            role: s.authorRole,
+            createdAt: s.createdAt
+          }),
           s.imageUrl &&
             e("div", {
               className: "classified-thumb",
@@ -63,18 +69,7 @@ function NeighborServicesSection(props) {
         "p",
         null,
         "Covoiturage, baby-sitting, aide ponctuelle, prêt d’outils…"
-      )
-    ),
-    servicesError &&
-      e(
-        "div",
-        { className: "page-section-error" },
-        servicesError
       ),
-    renderList(items),
-    e(
-      "div",
-      { className: "service-form-actions" },
       e(
         "button",
         {
@@ -84,7 +79,14 @@ function NeighborServicesSection(props) {
         },
         "Publier un service"
       )
-    )
+    ),
+    servicesError &&
+      e(
+        "div",
+        { className: "page-section-error" },
+        servicesError
+      ),
+    renderList(items)
   );
 }
 

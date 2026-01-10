@@ -26,6 +26,12 @@ function ClassifiedsNeighbors(props) {
             className: "classified-item",
             onClick: () => onSelect && onSelect(item)
           },
+          e(CardAuthorHeader, {
+            name: item.authorName,
+            avatarUrl: item.authorAvatarUrl,
+            role: item.authorRole,
+            createdAt: item.createdAt
+          }),
           item.imageUrl &&
             e("div", {
               className: "classified-thumb",

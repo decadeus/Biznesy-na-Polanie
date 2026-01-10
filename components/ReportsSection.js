@@ -21,6 +21,12 @@ function ReportsSection(props) {
         e(
           "article",
           { key: r.id, className: "classified-item" },
+          e(CardAuthorHeader, {
+            name: r.authorName,
+            avatarUrl: r.authorAvatarUrl,
+            role: r.authorRole,
+            createdAt: r.createdAt
+          }),
           r.imageUrl &&
             e("div", {
               className: "classified-thumb",
@@ -62,18 +68,7 @@ function ReportsSection(props) {
         "p",
         null,
         "Signaler un problème dans la résidence (lumière, propreté, bruit…)."
-      )
-    ),
-    reportsError &&
-      e(
-        "div",
-        { className: "page-section-error" },
-        reportsError
       ),
-    renderList(items),
-    e(
-      "div",
-      { className: "report-form-actions" },
       e(
         "button",
         {
@@ -83,7 +78,14 @@ function ReportsSection(props) {
         },
         "Nouveau signalement"
       )
-    )
+    ),
+    reportsError &&
+      e(
+        "div",
+        { className: "page-section-error" },
+        reportsError
+      ),
+    renderList(items)
   );
 }
 

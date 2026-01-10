@@ -107,11 +107,11 @@ module.exports = async (req, res) => {
   try {
     const url = new URL(req.url, "http://localhost");
     const line = (url.searchParams.get("line") || "32").toString();
-    if (!["32", "145"].includes(line)) {
+    if (!["32", "145", "710"].includes(line)) {
       res.statusCode = 400;
       return res.end(
         JSON.stringify({
-          error: "Ligne non supportée. Utilise 32 ou 145."
+          error: "Ligne non supportée. Utilise 32, 145 ou 710."
         })
       );
     }

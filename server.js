@@ -1,16 +1,151 @@
+require("dotenv").config();
+
 const express = require("express");
 const fetch = require("node-fetch");
 const vm = require("vm");
 const path = require("path");
+const crypto = require("crypto");
+const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Code d'accès partagé uniquement dans le groupe Facebook (sans OAuth)
+// Par défaut en local : "0000" (à surcharger via GROUP_ACCESS_CODE en prod)
+const GROUP_ACCESS_CODE = process.env.GROUP_ACCESS_CODE || "0000";
+// Nom attendu du groupe Facebook pour filtrer les demandes abusives
+const GROUP_NAME = process.env.GROUP_NAME || "Biznesy na Polanie";
+// Profil Facebook auto-validé (compte du développeur / admin local)
+const DEV_AUTO_APPROVE_PROFILE_URL =
+  process.env.DEV_AUTO_APPROVE_PROFILE_URL ||
+  "https://www.facebook.com/johann.kepker.1/";
+
+// Configuration Supabase (utilisée côté backend pour vérifier les sessions Supabase)
+const SUPABASE_URL =
+  process.env.SUPABASE_URL || "https://inekvpbycchoflnotgcr.supabase.co";
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+
+let supabaseAdmin = null;
+if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+  supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: {
+      persistSession: false
+    }
+  });
+}
 
 // Middleware pour parser le JSON des requêtes POST
 app.use(express.json());
 
 // Servez les fichiers statiques (index.html, etc.) depuis ce dossier
 app.use(express.static(__dirname));
+
+// --- Sessions simples en mémoire (prototype) ---
+
+// sessions[token] = { userId, createdAt, lastSeenAt }
+let sessions = {};
+
+// Utilisateurs "app" (auth locale + code + URL profil Facebook)
+// { id, supabaseUserId, name, avatarUrl, facebookProfileUrl, status, createdAt, lastLoginAt, role }
+let users = [];
+let nextUserId = 1;
+
+function parseCookies(req) {
+  const header = req.headers.cookie;
+  const cookies = {};
+  if (!header) return cookies;
+  header.split(";").forEach((part) => {
+    const [rawKey, rawVal] = part.split("=");
+    if (!rawKey) return;
+    const key = rawKey.trim();
+    const val = (rawVal || "").trim();
+    cookies[key] = decodeURIComponent(val);
+  });
+  return cookies;
+}
+
+function createSession(res, userId) {
+  const token = crypto.randomBytes(24).toString("hex");
+  const now = new Date().toISOString();
+  sessions[token] = {
+    userId,
+    createdAt: now,
+    lastSeenAt: now
+  };
+  // Prototype : cookie simple, non signé
+  res.cookie("sessionToken", token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: false // pour du local seulement – à adapter en prod
+  });
+}
+
+function getSession(req) {
+  const cookies = parseCookies(req);
+  const token = cookies.sessionToken;
+  if (!token || !sessions[token]) return null;
+  const sess = sessions[token];
+  const user = users.find((u) => u.id === sess.userId);
+  if (!user) {
+    delete sessions[token];
+    return null;
+  }
+  sess.lastSeenAt = new Date().toISOString();
+  return { token, user };
+}
+
+function destroySession(req, res) {
+  const cookies = parseCookies(req);
+  const token = cookies.sessionToken;
+  if (token && sessions[token]) {
+    delete sessions[token];
+  }
+  res.cookie("sessionToken", "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: false,
+    expires: new Date(0)
+  });
+}
+
+function toPublicUser(user) {
+  if (!user) return null;
+  return {
+    id: user.id,
+    name: user.name,
+    avatarUrl: user.avatarUrl,
+    facebookProfileUrl: user.facebookProfileUrl || null,
+    status: user.status,
+    role: user.role,
+    createdAt: user.createdAt,
+    lastLoginAt: user.lastLoginAt
+  };
+}
+
+function requireAuth(req, res, next) {
+  const session = getSession(req);
+  if (!session || !session.user) {
+    return res.status(401).json({ error: "Non authentifié." });
+  }
+  req.currentUser = session.user;
+  req.sessionToken = session.token;
+  next();
+}
+
+function requireModerator(req, res, next) {
+  const session = getSession(req);
+  if (!session || !session.user) {
+    return res.status(401).json({ error: "Non authentifié." });
+  }
+  if (!["moderator", "admin"].includes(session.user.role)) {
+    return res
+      .status(403)
+      .json({ error: "Accès réservé aux modérateurs / administrateurs." });
+  }
+  req.currentUser = session.user;
+  req.sessionToken = session.token;
+  next();
+}
 
 // --- Stockage local en mémoire (prototype) ---
 
@@ -302,6 +437,34 @@ let neighborServices = [
 
 let nextServiceId = neighborServices.length + 1;
 
+// Membres de la résidence (simulation)
+const avatarPool = [
+  "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=800",
+  "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=800",
+  "https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=800",
+  "https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=800",
+  "https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg?auto=compress&cs=tinysrgb&w=800"
+];
+
+let members = [];
+for (let i = 1; i <= 50; i++) {
+  let role = "member";
+  if (i === 1) role = "seo";
+  else if (i === 2 || i === 3) role = "admin";
+  else if (i >= 4 && i <= 7) role = "moderator"; // 4 modos
+
+  const avatarUrl = avatarPool[i % avatarPool.length];
+  members.push({
+    id: i,
+    nickname: "Résident " + i,
+    email: "resident" + i + "@example.com",
+    avatarUrl,
+    role
+  });
+}
+
+let nextMemberId = members.length + 1;
+
 // Sondages (sondages simples à choix unique)
 let polls = [
   {
@@ -374,11 +537,559 @@ let nextPollId = polls.length + 1;
 // votes par résident : { [pollId]: { [residentId]: optionId } }
 let pollVotesByResident = {};
 
+// Modérateurs (prototype simple, stocké en mémoire)
+let moderators = [
+  {
+    id: 1,
+    name: "Anna Kowalska",
+    email: "anna@example.com"
+  },
+  {
+    id: 2,
+    name: "Piotr Nowak",
+    email: "piotr@example.com"
+  }
+];
+
+let nextModeratorId = moderators.length + 1;
+
+// --- Authentification locale / Onboarding ---
+
+// Route utilitaire : état de session courante
+app.get("/api/me", (req, res) => {
+  const session = getSession(req);
+  if (!session || !session.user) {
+    return res.json({ authenticated: false, user: null });
+  }
+  res.json({
+    authenticated: true,
+    user: toPublicUser(session.user)
+  });
+});
+
+// Déconnexion simple (pour le futur si besoin)
+app.post("/auth/logout", (req, res) => {
+  destroySession(req, res);
+  res.json({ ok: true });
+});
+
+// Onboarding / inscription (nom + code d'accès + lien profil FB + nom du groupe)
+app.post("/api/onboarding/complete", (req, res) => {
+  const session = getSession(req);
+  const { name, accessCode, facebookProfileUrl, groupName } = req.body || {};
+
+  // Pour l'instant, on ne rend obligatoires que l'URL de profil et le nom du groupe
+  if (!facebookProfileUrl || !groupName) {
+    return res.status(400).json({
+      error:
+        "facebookProfileUrl et groupName sont requis pour finaliser l'onboarding."
+    });
+  }
+  // accessCode et name sont ignorés pour le moment (simplification du flux)
+
+  const normalizedGroupName = String(groupName).trim().toLowerCase();
+  const normalizedExpected = String(GROUP_NAME).trim().toLowerCase();
+  if (!normalizedGroupName || normalizedGroupName !== normalizedExpected) {
+    return res
+      .status(400)
+      .json({ error: "Nom du groupe Facebook incorrect." });
+  }
+
+  // Cas 1 : pas encore de session -> création d'un utilisateur en attente
+  if (!session || !session.user) {
+    const trimmedName = String(name || "").trim();
+    const now = new Date().toISOString();
+    const isFirst = users.length === 0;
+    const safeFacebookUrl = String(facebookProfileUrl).slice(0, 400);
+    const autoApprove =
+      safeFacebookUrl &&
+      safeFacebookUrl.startsWith(DEV_AUTO_APPROVE_PROFILE_URL);
+
+    const newUser = {
+      id: nextUserId++,
+      facebookId: null,
+      name: trimmedName ? trimmedName.slice(0, 160) : "Résident de Mały Kack",
+      avatarUrl:
+        "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=200",
+      facebookProfileUrl: safeFacebookUrl,
+      status: autoApprove ? "active" : "pending",
+      role: autoApprove || isFirst ? "admin" : "resident",
+      createdAt: now,
+      lastLoginAt: null
+    };
+    users.push(newUser);
+    createSession(res, newUser.id);
+    return res.json({
+      ok: true,
+      message: "Votre demande a été envoyée, un modérateur doit la valider.",
+      user: toPublicUser(newUser)
+    });
+  }
+
+  // Cas 2 : utilisateur déjà en session et en attente -> mise à jour du profil FB
+  const user = session.user;
+  if (user.status !== "pending") {
+    return res
+      .status(400)
+      .json({ error: "Ce compte n'est pas en attente d'onboarding." });
+  }
+
+  const safeFacebookUrl = String(facebookProfileUrl).slice(0, 400);
+  user.facebookProfileUrl = safeFacebookUrl;
+
+  const autoApprove =
+    safeFacebookUrl &&
+    safeFacebookUrl.startsWith(DEV_AUTO_APPROVE_PROFILE_URL);
+  if (autoApprove) {
+    user.status = "active";
+    user.role = "admin";
+  }
+  if (name && typeof name === "string" && name.trim()) {
+    user.name = name.trim().slice(0, 160);
+  }
+
+  return res.json({
+    ok: true,
+    message: autoApprove
+      ? "Votre compte a été validé automatiquement (admin développeur)."
+      : "Votre demande a été envoyée, un modérateur doit la valider.",
+    user: toPublicUser(user)
+  });
+});
+
+// Connexion via Supabase OAuth (Facebook) :
+// Le frontend envoie un accessToken Supabase, on vérifie l'utilisateur
+// puis on crée / met à jour un utilisateur local + une session.
+app.post("/api/auth/supabase-login", async (req, res) => {
+  try {
+    if (!supabaseAdmin) {
+      return res.status(500).json({
+        error:
+          "Supabase n'est pas configuré côté serveur (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY manquants)."
+      });
+    }
+
+    const { accessToken } = req.body || {};
+    if (!accessToken || typeof accessToken !== "string") {
+      return res
+        .status(400)
+        .json({ error: "accessToken Supabase manquant dans la requête." });
+    }
+
+    const { data, error } = await supabaseAdmin.auth.getUser(accessToken);
+    if (error || !data || !data.user) {
+      console.error("Supabase getUser error:", error && error.message);
+      return res
+        .status(401)
+        .json({ error: "Session Supabase invalide ou expirée." });
+    }
+
+    const supaUser = data.user;
+    const supaId = supaUser.id;
+    const metadata = supaUser.user_metadata || {};
+
+    const displayName =
+      metadata.full_name ||
+      metadata.name ||
+      metadata.user_name ||
+      "Résident Facebook";
+    const avatarUrl =
+      metadata.avatar_url ||
+      "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=200";
+
+    // Récupération du résident dans Supabase (table public.residents)
+    const { data: residentRow, error: residentError } = await supabaseAdmin
+      .from("residents")
+      .select("*")
+      .eq("id", supaId)
+      .maybeSingle();
+
+    const now = new Date().toISOString();
+    let resident = residentRow;
+
+    if (!resident) {
+      // Créer un résident en attente si aucun enregistrement n'existe encore
+      const insertResult = await supabaseAdmin
+        .from("residents")
+        .insert({
+          id: supaId,
+          display_name: displayName,
+          avatar_url: avatarUrl,
+          status: "pending",
+          role: "resident",
+          created_at: now,
+          last_login_at: now
+        })
+        .select("*")
+        .single();
+
+      if (insertResult.error) {
+        console.error(
+          "Erreur création resident Supabase:",
+          insertResult.error.message
+        );
+        return res.status(500).json({
+          error:
+            "Impossible de créer le profil résident dans Supabase pour le moment."
+        });
+      }
+      resident = insertResult.data;
+    } else {
+      // Mettre à jour les infos de base + last_login_at
+      const updateResult = await supabaseAdmin
+        .from("residents")
+        .update({
+          display_name: displayName,
+          avatar_url: avatarUrl,
+          last_login_at: now
+        })
+        .eq("id", supaId)
+        .select("*")
+        .single();
+
+      if (!updateResult.error && updateResult.data) {
+        resident = updateResult.data;
+      }
+    }
+
+    // On projette le resident Supabase dans notre format "user" local
+    const user = {
+      id: resident.id,
+      supabaseUserId: supaId,
+      name: resident.display_name || displayName,
+      avatarUrl: resident.avatar_url || avatarUrl,
+      facebookProfileUrl: resident.facebook_profile_url || null,
+      status: resident.status || "pending",
+      role: resident.role || "resident",
+      createdAt: resident.created_at || now,
+      lastLoginAt: resident.last_login_at || now
+    };
+
+    // On synchronise également notre tableau en mémoire pour les routes existantes
+    const existingIndex = users.findIndex((u) => u.supabaseUserId === supaId);
+    if (existingIndex === -1) {
+      users.push(user);
+    } else {
+      users[existingIndex] = user;
+    }
+
+    createSession(res, user.id);
+
+    return res.json({
+      authenticated: user.status === "active",
+      user: toPublicUser(user)
+    });
+  } catch (err) {
+    console.error("Erreur /api/auth/supabase-login:", err);
+    res.status(500).json({
+      error: "Impossible de terminer la connexion via Supabase pour le moment."
+    });
+  }
+});
+
+// Connexion simple par URL de profil Facebook (sans OAuth)
+// - Si le profil correspond à un utilisateur existant :
+//   - on crée une session,
+//   - si status === "active" -> authenticated: true,
+//   - sinon -> authenticated: false (l'UI affichera les écrans pending/blocked).
+// - Si aucun utilisateur ne correspond :
+//   - on ne crée pas d'utilisateur ici,
+//   - on renvoie needOnboarding: true pour ouvrir le modal de demande.
+app.post("/api/login/profile", (req, res) => {
+  const { facebookProfileUrl } = req.body || {};
+  const raw = (facebookProfileUrl || "").toString().trim();
+  if (!raw) {
+    return res
+      .status(400)
+      .json({ error: "Merci de renseigner l'URL de votre profil Facebook." });
+  }
+
+  const normalize = (url) => url.replace(/\/+$/, "");
+  const normalized = normalize(raw);
+
+  const user = users.find((u) => {
+    const uUrl = (u.facebookProfileUrl || "").toString().trim();
+    return uUrl && normalize(uUrl) === normalized;
+  });
+
+  if (!user) {
+    return res.json({
+      authenticated: false,
+      user: null,
+      needOnboarding: true,
+      facebookProfileUrl: normalized
+    });
+  }
+
+  const now = new Date().toISOString();
+  user.lastLoginAt = now;
+  createSession(res, user.id);
+
+  return res.json({
+    authenticated: user.status === "active",
+    user: toPublicUser(user),
+    status: user.status
+  });
+});
+
+// Route de connexion de développement (accès temporaire à la page connectée)
+// À n'utiliser qu'en local pour tester l'interface sans validation de compte.
+app.post("/auth/dev-login", (req, res) => {
+  const now = new Date().toISOString();
+  let devUser = users.find((u) => u.role === "admin");
+  if (!devUser) {
+    devUser = {
+      id: nextUserId++,
+      facebookId: null,
+      name: "Admin de test",
+      avatarUrl:
+        "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=200",
+      facebookProfileUrl: null,
+      status: "active",
+      role: "admin",
+      createdAt: now,
+      lastLoginAt: now
+    };
+    users.push(devUser);
+  } else {
+    devUser.status = "active";
+    devUser.lastLoginAt = now;
+  }
+
+  createSession(res, devUser.id);
+  res.json({
+    ok: true,
+    user: toPublicUser(devUser)
+  });
+});
+
+// Espace modérateur : gestion des comptes en attente
+app.get("/api/admin/pending-users", requireModerator, (req, res) => {
+  const pending = users
+    .filter((u) => u.status === "pending")
+    .map((u) => ({
+      id: u.id,
+      name: u.name,
+      avatarUrl: u.avatarUrl,
+      facebookProfileUrl: u.facebookProfileUrl || null,
+      createdAt: u.createdAt
+    }));
+  res.json({ items: pending });
+});
+
+app.post("/api/admin/users/:id/approve", requireModerator, (req, res) => {
+  const id = Number(req.params.id);
+  const user = users.find((u) => u.id === id);
+  if (!user) {
+    return res.status(404).json({ error: "Utilisateur introuvable." });
+  }
+  user.status = "active";
+  user.lastLoginAt = new Date().toISOString();
+  res.json(toPublicUser(user));
+});
+
+app.post("/api/admin/users/:id/reject", requireModerator, (req, res) => {
+  const id = Number(req.params.id);
+  const user = users.find((u) => u.id === id);
+  if (!user) {
+    return res.status(404).json({ error: "Utilisateur introuvable." });
+  }
+  user.status = "blocked";
+
+  // Optionnel : invalider les sessions actives de cet utilisateur
+  Object.keys(sessions).forEach((token) => {
+    if (sessions[token].userId === user.id) {
+      delete sessions[token];
+    }
+  });
+
+  res.json(toPublicUser(user));
+});
+
 // --- Routes locales pour la résidence, les annonces et les commerces ---
 
 // Infos résidence – utilisé par la carte "Présentation de la résidence"
 app.get("/api/residence", (req, res) => {
   res.json(residenceInfo);
+});
+
+// Liste des modérateurs
+app.get("/api/moderators", (req, res) => {
+  res.json({ items: moderators });
+});
+
+// Ajout d'un modérateur (sera plus tard restreint à admin/SEO)
+app.post("/api/moderators", (req, res) => {
+  const { name, email } = req.body || {};
+  if (!name || !email) {
+    return res
+      .status(400)
+      .json({ error: "name et email sont requis pour créer un modérateur." });
+  }
+  const newItem = {
+    id: nextModeratorId++,
+    name: String(name).slice(0, 120),
+    email: String(email).slice(0, 160)
+  };
+  moderators.push(newItem);
+  res.status(201).json(newItem);
+});
+
+// Suppression d'un modérateur
+app.delete("/api/moderators/:id", (req, res) => {
+  const id = Number(req.params.id);
+  const index = moderators.findIndex((m) => m.id === id);
+  if (index === -1) {
+    return res.status(404).json({ error: "Modérateur introuvable." });
+  }
+  const [removed] = moderators.splice(index, 1);
+  res.json(removed);
+});
+
+// Liste des membres (résidents Supabase)
+app.get("/api/members", async (req, res) => {
+  try {
+    if (!supabaseAdmin) {
+      return res.status(500).json({
+        error:
+          "Supabase n'est pas configuré côté serveur (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY manquants)."
+      });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("residents")
+      .select("*")
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.error("Erreur chargement residents Supabase:", error.message);
+      return res
+        .status(500)
+        .json({ error: "Impossible de charger les membres depuis Supabase." });
+    }
+
+    const items = (data || []).map((row) => ({
+      id: row.id,
+      nickname: row.display_name || "Résident",
+      email: null,
+      avatarUrl:
+        row.avatar_url ||
+        avatarPool[Math.floor(Math.random() * avatarPool.length)],
+      role: row.role || "resident",
+      facebookProfileUrl: row.facebook_profile_url || null,
+      status: row.status || "pending"
+    }));
+
+    res.json({ items });
+  } catch (e) {
+    console.error("Erreur /api/members:", e);
+    res
+      .status(500)
+      .json({ error: "Impossible de charger les membres pour le moment." });
+  }
+});
+
+// Ajout direct de membre : non supporté (les résidents sont créés via Login Facebook)
+app.post("/api/members", (req, res) => {
+  return res.status(400).json({
+    error:
+      "Les résidents sont créés automatiquement lorsqu'ils se connectent avec Facebook. Aucun ajout manuel n'est nécessaire."
+  });
+});
+
+// Mise à jour du rôle d'un membre (table residents)
+app.post("/api/members/:id/role", async (req, res) => {
+  if (!supabaseAdmin) {
+    return res.status(500).json({
+      error:
+        "Supabase n'est pas configuré côté serveur (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY manquants)."
+    });
+  }
+
+  const id = req.params.id;
+  const { role } = req.body || {};
+  if (!role) {
+    return res.status(400).json({ error: "role est requis." });
+  }
+  const allowed = ["super_admin", "admin", "moderator", "resident"];
+  if (!allowed.includes(role)) {
+    return res
+      .status(400)
+      .json({ error: "role doit être parmi: " + allowed.join(", ") });
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("residents")
+    .update({ role })
+    .eq("id", id)
+    .select("*")
+    .single();
+
+  if (error) {
+    console.error("Erreur update role resident:", error.message);
+    return res
+      .status(500)
+      .json({ error: "Impossible de modifier le rôle de ce membre." });
+  }
+  if (!data) {
+    return res.status(404).json({ error: "Membre introuvable." });
+  }
+
+  const mapped = {
+    id: data.id,
+    nickname: data.display_name || "Résident",
+    email: null,
+    avatarUrl:
+      data.avatar_url ||
+      avatarPool[Math.floor(Math.random() * avatarPool.length)],
+    role: data.role || "resident",
+    facebookProfileUrl: data.facebook_profile_url || null,
+    status: data.status || "pending"
+  };
+
+  res.json(mapped);
+});
+
+// Suppression d'un membre : on le marque simplement comme "blocked"
+app.delete("/api/members/:id", async (req, res) => {
+  if (!supabaseAdmin) {
+    return res.status(500).json({
+      error:
+        "Supabase n'est pas configuré côté serveur (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY manquants)."
+    });
+  }
+
+  const id = req.params.id;
+  const { data, error } = await supabaseAdmin
+    .from("residents")
+    .update({ status: "blocked" })
+    .eq("id", id)
+    .select("*")
+    .single();
+
+  if (error) {
+    console.error("Erreur suppression (blocage) resident:", error.message);
+    return res
+      .status(500)
+      .json({ error: "Impossible de bloquer ce membre pour le moment." });
+  }
+  if (!data) {
+    return res.status(404).json({ error: "Membre introuvable." });
+  }
+
+  const mapped = {
+    id: data.id,
+    nickname: data.display_name || "Résident",
+    email: null,
+    avatarUrl:
+      data.avatar_url ||
+      avatarPool[Math.floor(Math.random() * avatarPool.length)],
+    role: data.role || "resident",
+    facebookProfileUrl: data.facebook_profile_url || null,
+    status: data.status || "blocked"
+  };
+
+  res.json(mapped);
 });
 
 // Liste des petites annonces
@@ -749,8 +1460,10 @@ async function getDeparturesForToday(line) {
 app.get("/api/departures", async (req, res) => {
   try {
     const line = (req.query.line || "32").toString();
-    if (!["32", "145"].includes(line)) {
-      return res.status(400).json({ error: "Ligne non supportée. Utilise 32 ou 145." });
+    if (!["32", "145", "710"].includes(line)) {
+      return res
+        .status(400)
+        .json({ error: "Ligne non supportée. Utilise 32, 145 ou 710." });
     }
 
     const result = await getDeparturesForToday(line);

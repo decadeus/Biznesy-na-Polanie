@@ -43,6 +43,15 @@ function BusCard(props) {
             },
             "145"
           ),
+          e(
+            "button",
+            {
+              className:
+                "line-switch-button" + (selectedLine === "710" ? " active" : ""),
+              onClick: () => setSelectedLine("710")
+            },
+            "710"
+          ),
           e("span", null, "Mały Kack")
         ),
         e(
@@ -63,7 +72,9 @@ function BusCard(props) {
               ? "Chargement des horaires depuis ZKM Gdynia..."
               : selectedLine === "32"
               ? "Prochains départs direction Pogórze Dolne Złota"
-              : "Prochains départs direction Karwiny Tuwima"
+              : selectedLine === "145"
+              ? "Prochains départs direction Karwiny Tuwima"
+              : "Prochains départs direction Sopot"
           ),
         error &&
           e(

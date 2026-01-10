@@ -3,7 +3,11 @@
 const { useEffect, useState } = React;
 
 function App() {
+  const supabase = window.supabaseClient || null;
   const [now, setNow] = useState(new Date());
+  const [authChecked, setAuthChecked] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authError, setAuthError] = useState(null);
   const [selectedLine, setSelectedLine] = useState("32");
   const [departures, setDepartures] = useState([]);
   const [loadedDate, setLoadedDate] = useState(null);
@@ -32,7 +36,6 @@ function App() {
   const [formTitle, setFormTitle] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formPrice, setFormPrice] = useState("");
-  const [loggedIn, setLoggedIn] = useState(false);
   const [showClassifiedsModal, setShowClassifiedsModal] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
@@ -51,8 +54,94 @@ function App() {
   const [creatingPoll, setCreatingPoll] = useState(false);
   const [showPollModal, setShowPollModal] = useState(false);
   const [residentId] = useState(() => getOrCreateResidentId());
+  const [adminView, setAdminView] = useState("dashboard"); // "dashboard", "members", "pendingUsers", "stats"
   const [selectedShop, setSelectedShop] = useState(null);
   const [showShopModal, setShowShopModal] = useState(false);
+  const [moderators, setModerators] = useState([]);
+  const [moderatorsError, setModeratorsError] = useState(null);
+  const [members, setMembers] = useState([]);
+  const [membersError, setMembersError] = useState(null);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersPage, setMembersPage] = useState(1);
+  const [membersSearch, setMembersSearch] = useState("");
+  const [creatingMember, setCreatingMember] = useState(false);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [pendingProfileUrl, setPendingProfileUrl] = useState("");
+
+  useEffect(() => {
+    async function loadCurrentUser() {
+      try {
+        setAuthError(null);
+        const res = await fetch("/api/me");
+        if (!res.ok) {
+          throw new Error("Impossible de vérifier votre session.");
+        }
+        const data = await res.json();
+        if (data && data.authenticated && data.user) {
+          setCurrentUser(data.user);
+        } else {
+          setCurrentUser(null);
+        }
+      } catch (e) {
+        console.error(e);
+        setAuthError("Impossible de vérifier votre session.");
+      } finally {
+        setAuthChecked(true);
+      }
+    }
+
+    loadCurrentUser();
+  }, []);
+
+  // Synchronise l'URL avec l'état de connexion :
+  // - utilisateur connecté  -> /welcome
+  // - non connecté          -> /
+  useEffect(() => {
+    if (!authChecked) return;
+    const path = window.location.pathname;
+    if (currentUser && path !== "/welcome") {
+      window.history.replaceState({}, "", "/welcome");
+    } else if (!currentUser && path === "/welcome") {
+      window.history.replaceState({}, "", "/");
+    }
+  }, [authChecked, currentUser]);
+
+  // Si une session Supabase existe, on tente de la synchroniser avec le backend
+  useEffect(() => {
+    if (!supabase) return;
+    (async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          console.warn("Supabase getSession error:", error.message);
+          return;
+        }
+        if (!data || !data.session) return;
+        const accessToken = data.session.access_token;
+        // On informe le backend pour qu'il crée une session locale + currentUser
+        const res = await fetch("/api/auth/supabase-login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accessToken })
+        });
+        const payload = await res.json().catch(() => null);
+        if (!res.ok) {
+          console.warn(
+            "Supabase-login backend error:",
+            payload && payload.error
+          );
+          return;
+        }
+        if (payload && payload.authenticated && payload.user) {
+          setCurrentUser(payload.user);
+          setAuthChecked(true);
+        }
+      } catch (e) {
+        console.warn("Supabase sync exception:", e);
+      }
+    })();
+  }, [supabase]);
 
   useEffect(() => {
     async function loadDepartures() {
@@ -118,6 +207,21 @@ function App() {
       window.localStorage.setItem("profileAvatar", profileAvatar || "");
     } catch (e) {}
   }, [profileName, profileAvatar]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    setProfileName((prev) =>
+      prev && prev !== "Résident de Mały Kack"
+        ? prev
+        : currentUser.name || "Résident de Mały Kack"
+    );
+    // Toujours privilégier la vraie photo de profil renvoyée par le backend
+    // (Supabase / Facebook). Si elle n'existe pas, on garde un fallback.
+    setProfileAvatar(
+      currentUser.avatarUrl ||
+        "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=200"
+    );
+  }, [currentUser]);
 
   useEffect(() => {
     async function loadResidence() {
@@ -296,6 +400,79 @@ function App() {
     }
   }
 
+  async function loadMembers() {
+    try {
+      setMembersLoading(true);
+      setMembersError(null);
+      const res = await fetch("/api/members");
+      if (!res.ok) {
+        throw new Error("Impossible de charger les membres.");
+      }
+      const data = await res.json();
+      setMembers(Array.isArray(data.items) ? data.items : []);
+    } catch (e) {
+      console.error(e);
+      setMembersError(
+        e && e.message ? e.message : "Erreur lors du chargement des membres."
+      );
+    } finally {
+      setMembersLoading(false);
+    }
+  }
+
+  async function handleChangeMemberRole(id, newRole) {
+    try {
+      const res = await fetch("/api/members/" + id + "/role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: newRole })
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(
+          (errData && errData.error) ||
+            "Impossible de modifier le rôle de ce membre."
+        );
+      }
+      const updated = await res.json();
+      setMembers((prev) =>
+        (prev || []).map((m) => (m.id === updated.id ? updated : m))
+      );
+    } catch (e) {
+      console.error(e);
+      setMembersError(
+        e && e.message
+          ? e.message
+          : "Erreur lors de la modification du rôle du membre."
+      );
+    }
+  }
+
+  async function handleDeleteMember(id) {
+    if (!window.confirm("Supprimer ce membre ?")) return;
+    try {
+      const res = await fetch("/api/members/" + id, {
+        method: "DELETE"
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(
+          (errData && errData.error) ||
+            "Impossible de supprimer ce membre."
+        );
+      }
+      await res.json();
+      setMembers((prev) => (prev || []).filter((m) => m.id !== id));
+    } catch (e) {
+      console.error(e);
+      setMembersError(
+        e && e.message
+          ? e.message
+          : "Erreur lors de la suppression du membre."
+      );
+    }
+  }
+
   async function handleCreatePoll(payload) {
     if (
       !payload ||
@@ -452,14 +629,424 @@ function App() {
   // Création de commerce sera finalement gérée uniquement par les modérateurs / dev
   // (via Supabase plus tard). Aucun formulaire public n'appelle cette logique côté client.
 
-  if (!loggedIn) {
+  async function loadModerators() {
+    try {
+      setModeratorsError(null);
+      const res = await fetch("/api/moderators");
+      if (!res.ok) {
+        throw new Error("Impossible de charger les modérateurs.");
+      }
+      const data = await res.json();
+      setModerators(Array.isArray(data.items) ? data.items : []);
+    } catch (e) {
+      console.error(e);
+      setModeratorsError(
+        e && e.message ? e.message : "Erreur lors du chargement des modérateurs."
+      );
+    }
+  }
+
+  async function handleAddModerator() {
+    const name = window.prompt("Nom du modérateur :");
+    if (!name) return;
+    const email = window.prompt("E-mail du modérateur :");
+    if (!email) return;
+    try {
+      setModeratorsError(null);
+      const res = await fetch("/api/moderators", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email })
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(
+          (errData && errData.error) ||
+            "Impossible d'ajouter ce modérateur."
+        );
+      }
+      const created = await res.json();
+      setModerators((prev) => [...prev, created]);
+    } catch (e) {
+      console.error(e);
+      setModeratorsError(
+        e && e.message ? e.message : "Erreur lors de l'ajout du modérateur."
+      );
+    }
+  }
+
+  async function handleRemoveModerator(id) {
+    if (!window.confirm("Supprimer ce modérateur ?")) return;
+    try {
+      setModeratorsError(null);
+      const res = await fetch("/api/moderators/" + id, {
+        method: "DELETE"
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(
+          (errData && errData.error) ||
+            "Impossible de supprimer ce modérateur."
+        );
+      }
+      await res.json();
+      setModerators((prev) => prev.filter((m) => m.id !== id));
+    } catch (e) {
+      console.error(e);
+      setModeratorsError(
+        e && e.message
+          ? e.message
+          : "Erreur lors de la suppression du modérateur."
+      );
+    }
+  }
+
+  React.useEffect(() => {
+    if (
+      currentUser &&
+      (currentUser.role === "admin" || currentUser.role === "super_admin")
+    ) {
+      loadModerators();
+    }
+  }, [currentUser && currentUser.role]);
+
+  React.useEffect(() => {
+    if (
+      currentUser &&
+      (currentUser.role === "moderator" ||
+        currentUser.role === "admin" ||
+        currentUser.role === "super_admin")
+    ) {
+      loadMembers();
+    }
+  }, [currentUser && currentUser.role]);
+
+  async function handleDevLogin() {
+    try {
+      setAuthError(null);
+      const res = await fetch("/auth/dev-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        const msg =
+          (data && data.error) ||
+          "Impossible d'activer l'accès temporaire pour le moment.";
+        throw new Error(msg);
+      }
+      if (data && data.user) {
+        setCurrentUser(data.user);
+        setAuthChecked(true);
+      }
+    } catch (e) {
+      console.error(e);
+      setAuthError(
+        e && e.message
+          ? e.message
+          : "Impossible d'activer l'accès temporaire pour le moment."
+      );
+    }
+  }
+
+  async function handleSupabaseFacebookLogin() {
+    if (!supabase) {
+      setAuthError(
+        "Supabase n'est pas initialisé côté client. Vérifiez le script dans index.html."
+      );
+      return;
+    }
+    try {
+      setAuthError(null);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "facebook",
+        options: {
+          redirectTo: window.location.origin,
+          scopes: "public_profile" // on ne demande pas l'email pour éviter Invalid Scopes
+        }
+      });
+      if (error) {
+        throw error;
+      }
+    } catch (e) {
+      console.error("Erreur login Supabase/Facebook:", e);
+      setAuthError(
+        e && e.message
+          ? e.message
+          : "Impossible de démarrer la connexion Facebook pour le moment."
+      );
+    }
+  }
+
+  async function handleProfileUrlLogin(facebookProfileUrl) {
+    const url = (facebookProfileUrl || "").trim();
+    if (!url) {
+      alert("Merci de coller l'URL de votre profil Facebook.");
+      return;
+    }
+    try {
+      setAuthError(null);
+      const res = await fetch("/api/login/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ facebookProfileUrl: url })
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(
+          (data && data.error) ||
+            "Impossible de vérifier votre profil Facebook pour le moment."
+        );
+      }
+      if (data && data.authenticated && data.user) {
+        setCurrentUser(data.user);
+        setAuthChecked(true);
+        // Redirige vers la page connectée
+        window.history.replaceState({}, "", "/welcome");
+        return;
+      }
+      if (data && data.needOnboarding) {
+        setPendingProfileUrl(url);
+        setShowOnboarding(true);
+        setAuthChecked(true);
+        return;
+      }
+      if (data && data.user) {
+        setCurrentUser(data.user);
+        setAuthChecked(true);
+        if (data.user.status === "active") {
+          window.history.replaceState({}, "", "/welcome");
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      setAuthError(
+        e && e.message
+          ? e.message
+          : "Erreur lors de la connexion avec votre lien Facebook."
+      );
+    }
+  }
+
+  async function handleLogoutToHome() {
+    try {
+      setAuthError(null);
+      // Déconnexion côté backend (session cookie)
+      await fetch("/auth/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      }).catch(() => null);
+
+      // Déconnexion Supabase (session OAuth Facebook)
+      if (supabase && supabase.auth && supabase.auth.signOut) {
+        try {
+          await supabase.auth.signOut();
+        } catch (e) {
+          console.warn("Erreur supabase.auth.signOut:", e);
+        }
+      }
+    } finally {
+      setCurrentUser(null);
+      setAuthChecked(true);
+      setShowOnboarding(false);
+      // Retour explicite sur la page d'accueil
+      window.history.replaceState({}, "", "/");
+    }
+  }
+
+  if (!authChecked) {
+    return e(
+      "div",
+      { className: "app-loading" },
+      "Chargement de votre session..."
+    );
+  }
+
+  if (!currentUser) {
+    if (showOnboarding) {
+      return e(OnboardingStep, {
+        currentUser: null,
+        initialFacebookProfileUrl: pendingProfileUrl,
+        onCompleted: function (user) {
+          if (user) {
+            setCurrentUser(user);
+          }
+          setShowOnboarding(false);
+        },
+        onCancel: function () {
+          setShowOnboarding(false);
+        }
+      });
+    }
     return e(ResidenceHero, {
       residence,
       residenceError,
       classifieds,
-      onLogin: () => setLoggedIn(true)
+      onOpenOnboarding: function () {
+        setShowOnboarding(true);
+      },
+      onProfileLogin: handleProfileUrlLogin,
+      onSupabaseLogin: handleSupabaseFacebookLogin,
+      onDevLogin: handleDevLogin,
+      authError
     });
   }
+
+  if (currentUser.status === "blocked") {
+    return e(
+      "div",
+      { className: "blocked-screen" },
+      e(
+        "div",
+        { className: "card card-wrapper" },
+        e(
+          "div",
+          { className: "card-content" },
+          e("h2", null, "Compte bloqué"),
+          e(
+            "p",
+            null,
+            "Votre compte a été bloqué par un modérateur. Contactez la résidence si vous pensez qu'il s'agit d'une erreur."
+          )
+        )
+      )
+    );
+  }
+
+  if (currentUser.status === "pending" && !currentUser.facebookProfileUrl) {
+    return e(OnboardingStep, {
+      currentUser,
+      initialFacebookProfileUrl: currentUser.facebookProfileUrl,
+      onCompleted: function (user) {
+        if (user) {
+          setCurrentUser(user);
+        }
+      },
+      onCancel: null
+    });
+  }
+
+  if (currentUser.status === "pending") {
+    return e(
+      "div",
+      { className: "pending-screen" },
+      e(
+        "div",
+        { className: "card card-wrapper" },
+        e(
+          "div",
+          { className: "card-content" },
+          e("h2", null, "En attente de validation"),
+          e(
+            "p",
+            null,
+            "Votre demande d'accès a été envoyée. Un modérateur doit maintenant valider votre compte."
+          ),
+          e(
+            "div",
+            { style: { marginTop: 16 } },
+            e(
+              "button",
+              {
+                type: "button",
+                className: "btn-secondary",
+                onClick: handleLogoutToHome
+              },
+              "Revenir à la page d'accueil"
+            )
+          )
+        )
+      )
+    );
+  }
+
+  const role = currentUser.role || "resident"; // "resident", "moderator", "admin", "super_admin"
+  const isStaff =
+    role === "moderator" || role === "admin" || role === "super_admin";
+
+  const leftContent =
+    !isStaff || adminView === "dashboard"
+      ? e(
+          "div",
+          { className: "page-sections" },
+          e(ResidenceCard, {
+            residence,
+            residenceError
+          }),
+          e(ClassifiedsRealEstate, {
+            classifieds,
+            classifiedsError,
+            onOpenForm: () => {
+              setFormType("immobilier");
+              setShowClassifiedsModal(true);
+            },
+            onSelect: (item) => {
+              setSelectedAnnouncement(item);
+              setShowAnnouncementModal(true);
+            }
+          }),
+          e(ClassifiedsNeighbors, {
+            classifieds,
+            classifiedsError,
+            onOpenForm: () => {
+              setFormType("objet");
+              setShowClassifiedsModal(true);
+            },
+            onSelect: (item) => {
+              setSelectedAnnouncement(item);
+              setShowAnnouncementModal(true);
+            }
+          }),
+          // Section commerçants détaillée retirée pour garder la version compacte dans la colonne de droite
+          e(EventsSection, {
+            events,
+            eventsError,
+            onOpenForm: () => setShowEventModal(true)
+          }),
+          e(ReportsSection, {
+            reports,
+            reportsError,
+            onOpenForm: () => setShowReportModal(true)
+          }),
+          e(NeighborServicesSection, {
+            services,
+            servicesError,
+            onOpenForm: () => setShowServiceModal(true)
+          })
+        )
+      : adminView === "members"
+      ? e(
+          "div",
+          { className: "page-sections" },
+          e(MembersTable, {
+            members,
+            loading: membersLoading,
+            error: membersError,
+            role,
+            page: membersPage,
+            onChangePage: setMembersPage,
+            search: membersSearch,
+            onSearchChange: setMembersSearch,
+            onChangeRole: handleChangeMemberRole,
+            onDelete: handleDeleteMember,
+            onAdd: () => setShowAddMemberModal(true)
+          })
+        )
+      : adminView === "pendingUsers"
+      ? e(
+          "div",
+          { className: "page-sections" },
+          e(AdminPendingUsers, {})
+        )
+      : e(
+          "div",
+          { className: "page-sections" },
+          e(StatsOverview, {
+            polls,
+            members,
+            classifieds
+          })
+        );
 
   return e(
     React.Fragment,
@@ -483,94 +1070,76 @@ function App() {
             { className: "dashboard-hero-subtitle" },
             "Infos pratiques, bus, météo et vie de la résidence."
           )
+        ),
+        e(
+          "button",
+          {
+            type: "button",
+            className: "dashboard-hero-back",
+            onClick: handleLogoutToHome
+          },
+          "Revenir à la page d'accueil"
         )
       ),
       e(
         "div",
         { className: "dashboard-main" },
+        isStaff &&
+          e(
+            "div",
+            { className: "dashboard-main-nav" },
+            e(AdminNav, {
+              current: adminView,
+              onChange: setAdminView
+            })
+          ),
         e(
           "div",
           { className: "dashboard-main-left" },
+          leftContent
+        ),
+        (!isStaff || adminView === "dashboard") &&
           e(
             "div",
-            { className: "page-sections" },
-            e(ResidenceCard, {
-              residence,
-              residenceError
+            { className: "dashboard-main-right" },
+            e(ProfileBar, {
+              name: profileName,
+              avatarUrl: profileAvatar,
+              onOpenSettings: null
             }),
-            e(ClassifiedsRealEstate, {
-              classifieds,
-              classifiedsError,
-              onSelect: (item) => {
-                setSelectedAnnouncement(item);
-                setShowAnnouncementModal(true);
+            e(BusCard, {
+              now,
+              selectedLine,
+              setSelectedLine,
+              departures,
+              loadedDate,
+              loading,
+              error
+            }),
+            e(WeatherCard, {
+              now,
+              weather,
+              weatherError
+            }),
+            e(ShopsQuickCard, {
+              shops,
+              onSelect: (shop) => {
+                setSelectedShop(shop);
+                setShowShopModal(true);
               }
             }),
-            e(ClassifiedsNeighbors, {
-              classifieds,
-              classifiedsError,
-              onOpenForm: () => {
-                setFormType("objet");
-                setShowClassifiedsModal(true);
-              },
-              onSelect: (item) => {
-                setSelectedAnnouncement(item);
-                setShowAnnouncementModal(true);
-              }
+            e(PollsQuickCard, {
+              polls,
+              onVote: handleVotePoll
             }),
-            // Section commerçants détaillée retirée pour garder la version compacte dans la colonne de droite
-            e(EventsSection, {
-              events,
-              eventsError,
-              onOpenForm: () => setShowEventModal(true)
-            }),
-            e(ReportsSection, {
-              reports,
-              reportsError,
-              onOpenForm: () => setShowReportModal(true)
-            }),
-            e(NeighborServicesSection, {
-              services,
-              servicesError,
-              onOpenForm: () => setShowServiceModal(true)
+            e(ModeratorsCard, {
+              role,
+              moderators,
+              error: moderatorsError,
+              onAdd: handleAddModerator,
+              onRemove: handleRemoveModerator
             })
           )
-        ),
-        e(
-          "div",
-          { className: "dashboard-main-right" },
-          e(ProfileBar, {
-            name: profileName,
-            avatarUrl: profileAvatar,
-            onNameChange: setProfileName,
-            onAvatarChange: setProfileAvatar
-          }),
-          e(BusCard, {
-            now,
-            selectedLine,
-            setSelectedLine,
-            departures,
-            loadedDate,
-            loading,
-            error
-          }),
-          e(WeatherCard, {
-            now,
-            weather,
-            weatherError
-          }),
-          e(ShopsQuickCard, {
-            shops,
-            onSelect: (shop) => {
-              setSelectedShop(shop);
-              setShowShopModal(true);
-            }
-          }),
-          e(PollsQuickCard, {
-            polls,
-            onVote: handleVotePoll
-          })
-        )
       )
     ),
     e(ClassifiedsModal, {
@@ -610,6 +1179,54 @@ function App() {
         setShowShopModal(false);
         setSelectedShop(null);
       }
+    }),
+    e(AddMemberModal, {
+      open: showAddMemberModal,
+      creating: creatingMember,
+      onSubmit: async ({ email, role: roleForNew }) => {
+        const emailTrimmed = (email || "").trim();
+        if (!emailTrimmed) {
+          alert("Merci de saisir un e-mail pour le nouveau membre.");
+          return;
+        }
+        const nickname = emailTrimmed.split("@")[0] || emailTrimmed;
+        const effectiveRole =
+          roleForNew && ["member", "admin", "moderator"].includes(roleForNew)
+            ? roleForNew
+            : "member";
+        try {
+          setCreatingMember(true);
+          setMembersError(null);
+          const res = await fetch("/api/members", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              nickname,
+              email: emailTrimmed,
+              role: effectiveRole
+            })
+          });
+          if (!res.ok) {
+            const errData = await res.json().catch(() => null);
+            throw new Error(
+              (errData && errData.error) || "Impossible d'ajouter ce membre."
+            );
+          }
+          const created = await res.json();
+          setMembers((prev) => [...(prev || []), created]);
+          setShowAddMemberModal(false);
+        } catch (e) {
+          console.error(e);
+          setMembersError(
+            e && e.message
+              ? e.message
+              : "Erreur lors de l'ajout du membre."
+          );
+        } finally {
+          setCreatingMember(false);
+        }
+      },
+      onClose: () => setShowAddMemberModal(false)
     }),
     e(PollModal, {
       open: showPollModal,
