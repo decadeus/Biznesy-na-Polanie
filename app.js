@@ -158,6 +158,10 @@ function App() {
     // Par défaut, on démarre le site en polonais pour les résidents
     return "pl";
   });
+  const isDevEnv =
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1");
 
   useEffect(() => {
     async function loadCurrentUser() {
@@ -822,21 +826,42 @@ function App() {
   async function handleDevLogin() {
     try {
       setAuthError(null);
-      const res = await fetch("/auth/dev-login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        const msg =
-          (data && data.error) ||
-          "Impossible d'activer l'accès temporaire pour le moment.";
-        throw new Error(msg);
+
+      // En local (localhost), on utilise la vraie route backend
+      if (isDevEnv) {
+        const res = await fetch("/auth/dev-login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok) {
+          const msg =
+            (data && data.error) ||
+            "Impossible d'activer l'accès temporaire pour le moment.";
+          throw new Error(msg);
+        }
+        if (data && data.user) {
+          setCurrentUser(data.user);
+          setAuthChecked(true);
+        }
+        return;
       }
-      if (data && data.user) {
-        setCurrentUser(data.user);
-        setAuthChecked(true);
-      }
+
+      // En ligne (Vercel), on crée un utilisateur de démonstration côté front
+      const now = new Date().toISOString();
+      const demoUser = {
+        id: "demo-super-admin",
+        name: "Admin demonstracyjny",
+        avatarUrl:
+          "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=200",
+        facebookProfileUrl: null,
+        status: "active",
+        role: "super_admin",
+        createdAt: now,
+        lastLoginAt: now
+      };
+      setCurrentUser(demoUser);
+      setAuthChecked(true);
     } catch (e) {
       console.error(e);
       setAuthError(
