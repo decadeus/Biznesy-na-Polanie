@@ -1,7 +1,14 @@
 // Composant WeatherCard : affiche la météo actuelle et les prévisions courtes
 
 function WeatherCard(props) {
-  const { now, weather, weatherError } = props;
+  const { now, weather, weatherError, lang: rawLang } = props;
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
   const weatherSlots =
     weather && weather.nextHours ? buildNextWeatherSlots(weather.nextHours, now) : [];
 
@@ -17,12 +24,12 @@ function WeatherCard(props) {
         e(
           "div",
           { className: "line-badge" },
-          e("span", null, "Météo Gdynia")
+          e("span", null, t(lang, "weather_title"))
         ),
         e(
           "div",
           { className: "time-now" },
-          "Maintenant ",
+          t(lang, "weather_now_label") + " ",
           formatTime(now)
         )
       ),
@@ -44,7 +51,7 @@ function WeatherCard(props) {
                 e(
                   "div",
                   { className: "weather-temp-unit" },
-                  "Aujourd'hui"
+                t(lang, "weather_today_label")
                 )
               ),
               e(
@@ -103,7 +110,9 @@ function WeatherCard(props) {
                       e(
                         "div",
                         { className: "dep-label" },
-                        idx === 0 ? "Demain" : "Après-demain"
+                      idx === 0
+                        ? t(lang, "weather_tomorrow")
+                        : t(lang, "weather_after_tomorrow")
                       ),
                       e(
                         "div",
@@ -113,11 +122,9 @@ function WeatherCard(props) {
                       e(
                         "div",
                         { className: "dep-eta" },
-                        "min " +
-                          Math.round(d.tmin) +
-                          "°C \u2022 max " +
-                          Math.round(d.tmax) +
-                          "°C"
+                      t(lang, "weather_min_max")
+                        .replace("{tmin}", String(Math.round(d.tmin)))
+                        .replace("{tmax}", String(Math.round(d.tmax)))
                       )
                     )
                   )
@@ -125,18 +132,17 @@ function WeatherCard(props) {
               e(
                 "div",
                 { className: "footer-note" },
-                e(
-                  "span",
-                  null,
-                  "Données météo \u2022 Open-Meteo"
-                )
+                e("span", null, t(lang, "weather_footer"))
               )
             )
           )
         : e(
             "div",
             { className: "empty" },
-            weatherError || "Chargement de la météo..."
+            weatherError ||
+              (window.i18n && window.i18n.t
+                ? window.i18n.t(lang, "weather_loading")
+                : "Chargement de la météo...")
           )
     )
   );

@@ -8,8 +8,17 @@ function BusCard(props) {
     departures,
     loadedDate,
     loading,
-    error
+    error,
+    lang: rawLang
   } = props;
+
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
 
   const next = getNextDepartures(now, departures);
 
@@ -52,12 +61,12 @@ function BusCard(props) {
             },
             "710"
           ),
-          e("span", null, "Mały Kack")
+          e("span", null, t(lang, "bus_header_location"))
         ),
         e(
           "div",
           { className: "time-now" },
-          "Maintenant ",
+        t(lang, "bus_now_label") + " ",
           formatTime(now)
         )
       ),
@@ -69,12 +78,12 @@ function BusCard(props) {
             "div",
             { className: "subtitle" },
             loading
-              ? "Chargement des horaires depuis ZKM Gdynia..."
+              ? t(lang, "bus_loading_full")
               : selectedLine === "32"
-              ? "Prochains départs direction Pogórze Dolne Złota"
+              ? t(lang, "bus_next_dir_32")
               : selectedLine === "145"
-              ? "Prochains départs direction Karwiny Tuwima"
-              : "Prochains départs direction Sopot"
+              ? t(lang, "bus_next_dir_145")
+              : t(lang, "bus_next_dir_710")
           ),
         error &&
           e(
@@ -100,7 +109,7 @@ function BusCard(props) {
                   e(
                     "div",
                     { className: "dep-label" },
-                    "Prochain départ"
+                    t(lang, "bus_next_label")
                   ),
                   e(
                     "div",
@@ -115,10 +124,13 @@ function BusCard(props) {
                     "div",
                     { className: "dep-eta" },
                     next[0].diff === 0
-                      ? "maintenant"
+                      ? t(lang, "bus_eta_now")
                       : next[0].diff === 1
-                      ? "dans 1 min"
-                      : "dans " + next[0].diff + " min"
+                      ? t(lang, "bus_eta_in_1")
+                      : t(lang, "bus_eta_in_n").replace(
+                          "{n}",
+                          String(next[0].diff)
+                        )
                   )
                 )
               ),
@@ -136,7 +148,9 @@ function BusCard(props) {
                       e(
                         "div",
                         { className: "dep-label" },
-                        index === 0 ? "Suivant" : "Ensuite"
+                        index === 0
+                          ? t(lang, "bus_next_small_1")
+                          : t(lang, "bus_next_small_2")
                       ),
                       e(
                         "div",
@@ -147,10 +161,13 @@ function BusCard(props) {
                         "div",
                         { className: "dep-eta" },
                         dep.diff === 0
-                          ? "maintenant"
+                          ? t(lang, "bus_eta_now")
                           : dep.diff === 1
-                          ? "dans 1 min"
-                          : "dans " + dep.diff + " min"
+                          ? t(lang, "bus_eta_in_1")
+                          : t(lang, "bus_eta_in_n").replace(
+                              "{n}",
+                              String(dep.diff)
+                            )
                       )
                     )
                   )
@@ -160,8 +177,8 @@ function BusCard(props) {
               "div",
               { className: "empty" },
               loading
-                ? "Chargement..."
-                : "Aucun autre départ prévu aujourd'hui pour cet arrêt."
+                ? t(lang, "bus_loading_short")
+                : t(lang, "bus_no_more_today")
             ),
         e(
           "div",
@@ -170,8 +187,11 @@ function BusCard(props) {
             "span",
             null,
             loadedDate
-              ? "Horaires ZKM pour le " + loadedDate + "."
-              : "Horaires ZKM."
+              ? t(lang, "bus_footer_with_date").replace(
+                  "{date}",
+                  loadedDate
+                )
+              : t(lang, "bus_footer_generic")
           )
         )
       )

@@ -1,7 +1,14 @@
 // Composant compact pour mettre en avant quelques commerçants dans la colonne de droite
 
 function ShopsQuickCard(props) {
-  const { shops, onSelect } = props;
+  const { shops, onSelect, lang: rawLang } = props;
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
   const list = Array.isArray(shops) ? shops : [];
   if (!list.length) return null;
 
@@ -19,9 +26,13 @@ function ShopsQuickCard(props) {
         e(
           "div",
           { className: "line-badge" },
-          e("span", null, "Commerçant"),
+          e("span", null, t(lang, "shops_quick_title_main")),
           " ",
-          e("span", { style: { marginLeft: 6, fontSize: 12 } }, "dans l’immeuble")
+          e(
+            "span",
+            { style: { marginLeft: 6, fontSize: 12 } },
+            t(lang, "shops_quick_title_suffix")
+          )
         )
       ),
       e(

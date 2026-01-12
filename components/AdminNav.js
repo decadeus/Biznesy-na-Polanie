@@ -1,7 +1,15 @@
 // Navigation admin/modo dans la colonne de gauche
 
 function AdminNav(props) {
-  const { current, onChange } = props;
+  const { current, onChange, pendingCount, lang: rawLang } = props;
+
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
 
   function item(key, label) {
     const active = current === key;
@@ -29,16 +37,20 @@ function AdminNav(props) {
         e(
           "div",
           { className: "line-badge" },
-          e("span", null, "Navigation admin")
+          e("span", null, t(lang, "admin_nav_label"))
         )
       ),
       e(
         "div",
         { className: "admin-nav-list" },
-        item("dashboard", "Tableau de bord"),
-        item("members", "Membres"),
-        item("pendingUsers", "Validations comptes"),
-        item("stats", "Statistiques")
+        item("members", t(lang, "admin_nav_members")),
+        item(
+          "pendingUsers",
+          pendingCount && pendingCount > 0
+            ? t(lang, "admin_nav_pending") + " (" + pendingCount + ")"
+            : t(lang, "admin_nav_pending")
+        ),
+        item("stats", t(lang, "admin_nav_stats"))
       )
     )
   );

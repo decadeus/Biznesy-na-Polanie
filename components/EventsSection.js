@@ -1,7 +1,14 @@
 // Composant EventsSection : agenda des événements de la résidence
 
 function EventsSection(props) {
-  const { events, eventsError, onOpenForm } = props;
+  const { events, eventsError, onOpenForm, lang: rawLang } = props;
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
   const items = Array.isArray(events) ? events : [];
 
   function renderList(list) {
@@ -9,7 +16,7 @@ function EventsSection(props) {
       return e(
         "div",
         { className: "empty" },
-        "Aucun événement à venir pour le moment."
+        t(lang, "events_section_empty")
       );
     }
 
@@ -42,7 +49,7 @@ function EventsSection(props) {
               e(
                 "span",
                 { className: "classified-tag" },
-                "Événement"
+                t(lang, "events_tag")
               )
             ),
             e(
@@ -61,15 +68,15 @@ function EventsSection(props) {
 
   return e(
     "section",
-    { className: "page-section" },
+    { className: "page-section", id: "section-events" },
     e(
       "div",
       { className: "page-section-header" },
-      e("h2", null, "Événements de la résidence"),
+      e("h2", null, t(lang, "events_section_title")),
       e(
         "p",
         null,
-        "Réunions, travaux programmés et moments conviviaux."
+        t(lang, "events_section_subtitle")
       ),
       e(
         "button",
@@ -78,7 +85,7 @@ function EventsSection(props) {
           onClick: onOpenForm,
           className: "page-section-cta"
         },
-        "Créer un événement"
+        t(lang, "events_section_cta")
       )
     ),
     eventsError &&

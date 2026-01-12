@@ -5,15 +5,19 @@ function ResidenceHero(props) {
       residence,
       residenceError,
       classifieds,
-      onOpenOnboarding,
-      onProfileLogin,
-      onSupabaseLogin,
-      onDevLogin,
-      authError
+      authError,
+      lang: rawLang
     } = props;
   
-    const heroTitle = "Résidence Strzelców 42/40 – Mały Kack, Gdynia";
+    const lang = rawLang || "fr";
+    const t =
+      window.i18n && window.i18n.t
+        ? window.i18n.t
+        : function (_lang, key) {
+            return key;
+          };
   
+    const heroTitle = t(lang, "hero_title");
     return e(
       "div",
       { className: "hero-shell" },
@@ -34,7 +38,7 @@ function ResidenceHero(props) {
             e(
               "div",
               { className: "hero-kicker" },
-              "Présentation de la résidence"
+              t(lang, "hero_kicker")
             ),
             e(
               "h1",
@@ -47,76 +51,68 @@ function ResidenceHero(props) {
               e(
                 "span",
                 { className: "hero-title-accent" },
-                "un cadre de vie calme et bien connecté"
+                t(lang, "hero_subtitle")
               )
             )
           ),
+        e(
+          "div",
+          { className: "hero-body" },
           e(
-            "div",
-            { className: "hero-body" },
-            e(
-              "p",
-              null,
-              "Petite web app locale pour les résidents : infos pratiques, bus, météo et annonces."
-            )
+            "p",
+            null,
+            t(lang, "hero_body_intro")
           ),
           e(
             "div",
-            { className: "hero-cta-row" },
-            e(
-              "button",
-              {
-                type: "button",
-                onClick: onOpenOnboarding,
-                className: "hero-cta-main"
-              },
-              "Demander un accès résident"
-            ),
-            onSupabaseLogin &&
-              e(
-                "button",
-                {
-                  type: "button",
-                  onClick: onSupabaseLogin,
-                  className: "hero-cta-alt"
-                },
-                "Se connecter avec Facebook"
-              ),
-            onDevLogin &&
-              e(
-                "button",
-                {
-                  type: "button",
-                  onClick: onDevLogin,
-                  className: "hero-cta-alt"
-                },
-                "Accès temporaire (test)"
-              )
-          ),
-          onProfileLogin &&
+            { className: "hero-features" },
             e(
               "div",
-              { className: "hero-login-row" },
-              e("input", {
-                id: "hero-profile-url",
-                type: "url",
-                className: "input hero-login-input",
-                placeholder: "Collez ici l'URL de votre profil Facebook"
-              }),
+              { className: "hero-feature" },
+              e("div", { className: "hero-feature-icon hero-feature-icon-nature" }),
               e(
-                "button",
-                {
-                  type: "button",
-                  className: "btn-secondary",
-                  onClick: function () {
-                    var el = document.getElementById("hero-profile-url");
-                    var value = el && el.value ? el.value : "";
-                    if (onProfileLogin) onProfileLogin(value);
-                  }
-                },
-                "Se connecter avec mon lien Facebook"
+                "div",
+                { className: "hero-feature-content" },
+                e("h3", null, t(lang, "hero_feature_nature_title")),
+                e(
+                  "p",
+                  null,
+                  t(lang, "hero_feature_nature_body")
+                )
               )
             ),
+            e(
+              "div",
+              { className: "hero-feature" },
+              e("div", { className: "hero-feature-icon hero-feature-icon-access" }),
+              e(
+                "div",
+                { className: "hero-feature-content" },
+                e("h3", null, t(lang, "hero_feature_access_title")),
+                e(
+                  "p",
+                  null,
+                  t(lang, "hero_feature_access_body")
+                )
+              )
+            ),
+            e(
+              "div",
+              { className: "hero-feature" },
+              e("div", { className: "hero-feature-icon hero-feature-icon-comfort" }),
+              e(
+                "div",
+                { className: "hero-feature-content" },
+                e("h3", null, t(lang, "hero_feature_comfort_title")),
+                e(
+                  "p",
+                  null,
+                  t(lang, "hero_feature_comfort_body")
+                )
+              )
+            )
+          )
+        ),
           authError &&
             e("div", { className: "hero-error" }, authError)
         )

@@ -1,7 +1,14 @@
 // Carte de gestion des modérateurs (visible pour SEO et Admin)
 
 function ModeratorsCard(props) {
-  const { role, moderators, error, onAdd, onRemove } = props;
+  const { role, moderators, error, onAdd, onRemove, lang: rawLang } = props;
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
   if (role !== "super_admin" && role !== "admin") return null;
 
   const items = Array.isArray(moderators) ? moderators : [];
@@ -18,12 +25,14 @@ function ModeratorsCard(props) {
         e(
           "div",
           { className: "line-badge" },
-          e("span", null, "Modération"),
+          e("span", null, t(lang, "moderators_title")),
           " ",
           e(
             "span",
             { style: { marginLeft: 6, fontSize: 12 } },
-            role === "super_admin" ? "Super admin" : "Admin"
+            role === "super_admin"
+              ? t(lang, "moderators_role_super")
+              : t(lang, "moderators_role_admin")
           )
         )
       ),
@@ -61,7 +70,7 @@ function ModeratorsCard(props) {
           : e(
               "div",
               { className: "empty", style: { color: "#4b5563" } },
-              "Aucun modérateur défini pour le moment."
+              t(lang, "moderators_empty")
             )
       ),
       e(
@@ -74,7 +83,7 @@ function ModeratorsCard(props) {
             className: "btn-secondary-light",
             onClick: () => onAdd && onAdd()
           },
-          "Ajouter / gérer les modérateurs"
+          t(lang, "moderators_cta")
         )
       )
     )

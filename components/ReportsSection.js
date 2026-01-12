@@ -1,7 +1,14 @@
 // Composant ReportsSection : signalements des résidents
 
 function ReportsSection(props) {
-  const { reports, reportsError, onOpenForm } = props;
+  const { reports, reportsError, onOpenForm, lang: rawLang } = props;
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
 
   const items = Array.isArray(reports) ? reports : [];
 
@@ -42,7 +49,7 @@ function ReportsSection(props) {
               e(
                 "span",
                 { className: "classified-tag" },
-                r.status ? r.status : "Signalement"
+                r.status ? r.status : t(lang, "reports_tag_default")
               )
             ),
             e(
@@ -59,15 +66,15 @@ function ReportsSection(props) {
 
   return e(
     "section",
-    { className: "page-section" },
+    { className: "page-section", id: "section-reports" },
     e(
       "div",
       { className: "page-section-header" },
-      e("h2", null, "Signalements"),
+      e("h2", null, t(lang, "reports_section_title")),
       e(
         "p",
         null,
-        "Signaler un problème dans la résidence (lumière, propreté, bruit…)."
+        t(lang, "reports_section_subtitle")
       ),
       e(
         "button",
@@ -76,7 +83,7 @@ function ReportsSection(props) {
           onClick: onOpenForm,
           className: "page-section-cta"
         },
-        "Nouveau signalement"
+        t(lang, "reports_section_cta")
       )
     ),
     reportsError &&
@@ -85,7 +92,7 @@ function ReportsSection(props) {
         { className: "page-section-error" },
         reportsError
       ),
-    renderList(items)
+    renderList(items, t(lang, "reports_section_empty"))
   );
 }
 

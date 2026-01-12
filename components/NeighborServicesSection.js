@@ -1,7 +1,14 @@
 // Composant NeighborServicesSection : petits services entre voisins
 
 function NeighborServicesSection(props) {
-  const { services, servicesError, onOpenForm } = props;
+  const { services, servicesError, onOpenForm, lang: rawLang } = props;
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
 
   const items = Array.isArray(services) ? services : [];
 
@@ -10,7 +17,7 @@ function NeighborServicesSection(props) {
       return e(
         "div",
         { className: "empty" },
-        "Aucun service proposé ou demandé pour le moment."
+        t(lang, "services_section_empty")
       );
     }
 
@@ -44,7 +51,9 @@ function NeighborServicesSection(props) {
                 {
                   className: "classified-tag"
                 },
-                s.kind === "demande" ? "Demande" : "Offre"
+                s.kind === "demande"
+                  ? t(lang, "services_tag_request")
+                  : t(lang, "services_tag_offer")
               )
             ),
             e(
@@ -60,15 +69,15 @@ function NeighborServicesSection(props) {
 
   return e(
     "section",
-    { className: "page-section" },
+    { className: "page-section", id: "section-services" },
     e(
       "div",
       { className: "page-section-header" },
-      e("h2", null, "Petits services entre voisins"),
+      e("h2", null, t(lang, "services_section_title")),
       e(
         "p",
         null,
-        "Covoiturage, baby-sitting, aide ponctuelle, prêt d’outils…"
+        t(lang, "services_section_subtitle")
       ),
       e(
         "button",
@@ -77,7 +86,7 @@ function NeighborServicesSection(props) {
           onClick: onOpenForm,
           className: "page-section-cta"
         },
-        "Publier un service"
+        t(lang, "services_section_cta")
       )
     ),
     servicesError &&

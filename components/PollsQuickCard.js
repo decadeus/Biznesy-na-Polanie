@@ -1,7 +1,14 @@
 // Composant compact : affiche plusieurs sondages empilés avec le même layout (camembert + options)
 
 function PollsQuickCard(props) {
-  const { polls, onVote } = props;
+  const { polls, onVote, lang: rawLang } = props;
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
   const list = Array.isArray(polls) ? polls : [];
   if (!list.length) return null;
 
@@ -86,7 +93,12 @@ function PollsQuickCard(props) {
           e(
             "div",
             { className: "poll-quick-total" },
-            totalVotes ? totalVotes + " votes" : "Aucun vote"
+            totalVotes
+              ? t(lang, "polls_quick_total_votes").replace(
+                  "{n}",
+                  String(totalVotes)
+                )
+              : t(lang, "polls_quick_no_votes")
           )
         ),
         e(
@@ -119,8 +131,7 @@ function PollsQuickCard(props) {
         e(
           "div",
           { className: "poll-end-date" },
-          "Fin le ",
-          poll.endDate
+          t(lang, "polls_quick_end").replace("{date}", poll.endDate)
         )
     );
   }
@@ -137,9 +148,13 @@ function PollsQuickCard(props) {
         e(
           "div",
           { className: "line-badge" },
-          e("span", null, "Sondages"),
+          e("span", null, t(lang, "polls_quick_title_main")),
           " ",
-          e("span", { style: { marginLeft: 6, fontSize: 12 } }, "entre voisins")
+          e(
+            "span",
+            { style: { marginLeft: 6, fontSize: 12 } },
+            t(lang, "polls_quick_title_suffix")
+          )
         )
       ),
       e(

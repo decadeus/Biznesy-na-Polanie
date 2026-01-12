@@ -1,6 +1,8 @@
 // AdminPendingUsers : interface modérateurs pour valider / refuser les nouveaux comptes
 
-function AdminPendingUsers() {
+function AdminPendingUsers(props) {
+  const defaultAvatar =
+    "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=200";
   const [items, setItems] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
@@ -17,7 +19,11 @@ function AdminPendingUsers() {
           "Impossible de charger les comptes en attente.";
         throw new Error(msg);
       }
-      setItems(Array.isArray(data.items) ? data.items : []);
+      const list = Array.isArray(data.items) ? data.items : [];
+      setItems(list);
+      if (props && typeof props.onCountChange === "function") {
+        props.onCountChange(list.length);
+      }
     } catch (err) {
       console.error(err);
       setError(
@@ -34,6 +40,83 @@ function AdminPendingUsers() {
     loadPending();
   }, []);
 
+  function renderRow(u) {
+    return e(
+      "tr",
+      { key: u.id },
+      e(
+        "td",
+        null,
+        e("div", {
+          className: "member-avatar",
+          style: {
+            backgroundImage:
+              "url(" + (u.avatarUrl || defaultAvatar) + ")"
+          }
+        })
+      ),
+      e("td", null, u.name || "Utilisateur à valider"),
+      e(
+        "td",
+        null,
+        e(
+          "button",
+          {
+            type: "button",
+            className: "btn-secondary-light",
+            disabled: !u.facebookProfileUrl,
+            onClick: u.facebookProfileUrl
+              ? () =>
+                  window.open(
+                    u.facebookProfileUrl,
+                    "_blank",
+                    "noopener,noreferrer"
+                  )
+              : undefined
+          },
+          "Voir le compte FB"
+        )
+      ),
+      e(
+        "td",
+        null,
+        u.createdAt
+          ? new Date(u.createdAt).toLocaleDateString("fr-FR", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric"
+            })
+          : "—"
+      ),
+      e(
+        "td",
+        null,
+        e(
+          "div",
+          { className: "member-actions" },
+          e(
+            "button",
+            {
+              type: "button",
+              className: "btn-secondary-light",
+              onClick: () => actOnUser(u.id, "reject")
+            },
+            "Refuser"
+          ),
+          e(
+            "button",
+            {
+              type: "button",
+              className: "btn-secondary",
+              onClick: () => actOnUser(u.id, "approve")
+            },
+            "Accepter"
+          )
+        )
+      )
+    );
+  }
+
   async function actOnUser(id, action) {
     try {
       setError(null);
@@ -47,7 +130,13 @@ function AdminPendingUsers() {
           "Impossible de mettre à jour ce compte pour le moment.";
         throw new Error(msg);
       }
-      setItems((prev) => (prev || []).filter((u) => u.id !== id));
+      setItems((prev) => {
+        const next = (prev || []).filter((u) => u.id !== id);
+        if (props && typeof props.onCountChange === "function") {
+          props.onCountChange(next.length);
+        }
+        return next;
+      });
     } catch (err) {
       console.error(err);
       setError(
@@ -104,76 +193,31 @@ function AdminPendingUsers() {
             items.length > 0 &&
             e(
               "div",
-              { className: "admin-pending-list" },
-              items.map((u) =>
+              { className: "member-section" },
+              e(
+                "h3",
+                { className: "member-section-title" },
+                "Demandes en attente (",
+                items.length,
+                ")"
+              ),
+              e(
+                "table",
+                { className: "members-table" },
                 e(
-                  "article",
-                  { key: u.id, className: "admin-pending-card" },
+                  "thead",
+                  null,
                   e(
-                    "div",
-                    { className: "admin-pending-main" },
-                    e("div", {
-                      className: "admin-pending-avatar",
-                      style: {
-                        backgroundImage: u.avatarUrl
-                          ? "url(" + u.avatarUrl + ")"
-                          : "none"
-                      }
-                    }),
-                    e(
-                      "div",
-                      { className: "admin-pending-text" },
-                      e(
-                        "h3",
-                        { className: "admin-pending-name" },
-                        u.name || "Utilisateur Facebook"
-                      ),
-                      u.createdAt &&
-                        e(
-                          "p",
-                          { className: "admin-pending-date" },
-                          "Demande créée le ",
-                          new Date(u.createdAt).toLocaleString()
-                        ),
-                      u.facebookProfileUrl &&
-                        e(
-                          "p",
-                          { className: "admin-pending-link" },
-                          e(
-                            "a",
-                            {
-                              href: u.facebookProfileUrl,
-                              target: "_blank",
-                              rel: "noreferrer"
-                            },
-                            "Voir le profil Facebook"
-                          )
-                        )
-                    )
-                  ),
-                  e(
-                    "div",
-                    { className: "admin-pending-actions" },
-                    e(
-                      "button",
-                      {
-                        type: "button",
-                        className: "btn-secondary",
-                        onClick: () => actOnUser(u.id, "reject")
-                      },
-                      "Refuser"
-                    ),
-                    e(
-                      "button",
-                      {
-                        type: "button",
-                        className: "btn-primary",
-                        onClick: () => actOnUser(u.id, "approve")
-                      },
-                      "Accepter"
-                    )
+                    "tr",
+                    null,
+                    e("th", null, "Avatar"),
+                    e("th", null, "Nom"),
+                    e("th", null, "Profil Facebook"),
+                    e("th", null, "Date"),
+                    e("th", null, "Actions")
                   )
-                )
+                ),
+                e("tbody", null, items.map((u) => renderRow(u)))
               )
             )
         )

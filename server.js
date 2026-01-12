@@ -50,6 +50,24 @@ let sessions = {};
 let users = [];
 let nextUserId = 1;
 
+// Simulation : 23 demandes de validation de compte déjà en attente
+(() => {
+  const now = new Date().toISOString();
+  for (let i = 1; i <= 23; i++) {
+    users.push({
+      id: nextUserId++,
+      supabaseUserId: null,
+      name: "Demande " + i,
+      avatarUrl: null,
+      facebookProfileUrl: null,
+      status: "pending",
+      role: "resident",
+      createdAt: now,
+      lastLoginAt: now
+    });
+  }
+})();
+
 function parseCookies(req) {
   const header = req.headers.cookie;
   const cookies = {};
@@ -149,30 +167,30 @@ function requireModerator(req, res, next) {
 
 // --- Stockage local en mémoire (prototype) ---
 
-// Informations de base sur la résidence (page publique)
+// Informations de base sur la résidence (page publique) – contenu en polonais
 let residenceInfo = {
-  name: "Résidence Mały Kack – Gdynia",
+  name: "Osiedle Mały Kack – Gdynia",
   address: "Mały Kack, Gdynia",
   description:
-    "Petite web app locale pour les résidents : infos pratiques, horaires de bus, météo et petites annonces.",
+    "Prosta strona dla mieszkańców osiedla Na Polanie: rozkład jazdy autobusów, pogoda, ogłoszenia i informacje z osiedla.",
   practicalInfo: [
-    "Entrées : codes d’accès gérés par le syndic.",
-    "Ramassage des déchets encombrants : une fois par mois (infos à venir).",
-    "Contacts d’urgence : pompiers 998 / 112, police 997."
+    "Wejścia do klatek: kody dostępu zarządzane przez administrację osiedla.",
+    "Odbiór odpadów wielkogabarytowych: raz w miesiącu (szczegóły u administracji).",
+    "Numery alarmowe: straż pożarna 998 / 112, policja 997."
   ],
   lastUpdatedBy: "admin-local",
   lastUpdatedAt: new Date().toISOString()
 };
 
-// Petites annonces (immobilier / objets) stockées en mémoire
+// Petites annonces (immobilier / objets) stockées en mémoire – contenu en polonais
 // On initialise avec 3 annonces immobilières et 5 annonces diverses
 let classifieds = [
   {
     id: 1,
     type: "immobilier",
-    title: "À louer : 2 pièces Mały Kack Strzelców",
+    title: "Do wynajęcia: 2‑pokojowe mieszkanie Mały Kack, ul. Strzelców",
     description:
-      "Propriétaire loue appartement 2 pièces, cuisine équipée, 3e étage, exposé sud. Idéal pour un couple ou une personne seule.",
+      "Właściciel wynajmie 2‑pokojowe mieszkanie z osobną kuchnią, 3. piętro, ekspozycja południowa. Idealne dla pary lub jednej osoby.",
     price: 2800,
     currency: "PLN",
     createdAt: new Date().toISOString(),
@@ -182,9 +200,9 @@ let classifieds = [
   {
     id: 2,
     type: "immobilier",
-    title: "À vendre : studio rénové proche SKM",
+    title: "Na sprzedaż: kawalerka po remoncie blisko SKM",
     description:
-      "Studio lumineux entièrement rénové, 24 m², à 5 minutes de la gare SKM. Cuisine équipée, faibles charges, idéal premier achat.",
+      "Jasna kawalerka po generalnym remoncie, 24 m², 5 minut pieszo do stacji SKM. Kuchnia w zabudowie, niskie opłaty, idealna na pierwsze mieszkanie.",
     price: 399000,
     currency: "PLN",
     createdAt: new Date().toISOString(),
@@ -194,9 +212,9 @@ let classifieds = [
   {
     id: 3,
     type: "immobilier",
-    title: "Colocation : chambre dans 3 pièces",
+    title: "Współdzielenie: pokój w 3‑pokojowym mieszkaniu",
     description:
-      "Une chambre se libère dans un appartement 3 pièces au 4e étage, coloc calme, proche des lignes 32 et 145. Charges incluses.",
+      "Wolny pokój w 3‑pokojowym mieszkaniu na 4. piętrze, spokojni współlokatorzy, blisko linii 32 i 145. Opłaty w cenie.",
     price: 1500,
     currency: "PLN",
     createdAt: new Date().toISOString(),
@@ -206,9 +224,9 @@ let classifieds = [
   {
     id: 4,
     type: "objet",
-    title: "Recherche / vends petit bureau",
+    title: "Szukam / sprzedam małe biurko",
     description:
-      "Je cherche un petit bureau pour télétravail, et je vends mon ancien bureau IKEA en bon état. Me contacter si intéressé.",
+      "Szukam małego biurka do pracy zdalnej, a obecne biurko IKEA w dobrym stanie chętnie sprzedam. Kontakt przez ogłoszenie.",
     price: 200,
     currency: "PLN",
     createdAt: new Date().toISOString(),
@@ -218,9 +236,9 @@ let classifieds = [
   {
     id: 5,
     type: "objet",
-    title: "Canapé 3 places à donner",
+    title: "Oddam kanapę 3‑osobową",
     description:
-      "Canapé 3 places gris, utilisé mais propre. À venir chercher au rez-de-chaussée le week-end prochain.",
+      "Szara kanapa 3‑osobowa, używana, ale w dobrym stanie. Odbiór osobisty z parteru w najbliższy weekend.",
     price: 0,
     currency: "PLN",
     createdAt: new Date().toISOString(),
@@ -230,9 +248,9 @@ let classifieds = [
   {
     id: 6,
     type: "objet",
-    title: "Vends poussette enfant",
+    title: "Sprzedam wózek dziecięcy",
     description:
-      "Poussette compacte pliable, utilisée 1 an. Très pratique pour la ville, livret et accessoires inclus.",
+      "Składany, kompaktowy wózek dziecięcy używany około roku. Idealny do miasta, w zestawie instrukcja i akcesoria.",
     price: 350,
     currency: "PLN",
     createdAt: new Date().toISOString(),
@@ -242,9 +260,9 @@ let classifieds = [
   {
     id: 7,
     type: "objet",
-    title: "Cours de polonais entre voisins",
+    title: "Zajęcia z języka polskiego dla sąsiadów",
     description:
-      "Je propose des cours de polonais (niveau débutant) le soir dans la salle commune, petit groupe convivial.",
+      "Proponuję zajęcia z języka polskiego (poziom początkujący) wieczorami w sali wspólnej, mała, kameralna grupa.",
     price: 40,
     currency: "PLN",
     createdAt: new Date().toISOString(),
@@ -254,9 +272,9 @@ let classifieds = [
   {
     id: 8,
     type: "objet",
-    title: "Vélo de ville à vendre",
+    title: "Sprzedam rower miejski",
     description:
-      "Vélo de ville taille M, récemment révisé, idéal pour se rendre à Gdynia ou Sopot par la piste cyclable.",
+      "Rower miejski w rozmiarze M, po przeglądzie, idealny na dojazdy do Gdyni lub Sopotu ścieżką rowerową.",
     price: 700,
     currency: "PLN",
     createdAt: new Date().toISOString(),
@@ -267,14 +285,14 @@ let classifieds = [
 
 let nextClassifiedId = classifieds.length + 1;
 
-// Commerçants de la résidence (petits commerces locaux)
+// Commerçants de la résidence (petits commerces locaux) – contenu en polonais
 let shops = [
   {
     id: 1,
     name: "Vege Corner",
-    type: "Magasin vegan",
+    type: "Sklep wegański",
     description:
-      "Épicerie 100 % vegan au rez-de-chaussée du bâtiment B : produits frais, vrac, boissons végétales, pâtisseries maison.",
+      "Sklep 100% wegański na parterze budynku B: świeże warzywa i owoce, produkty na wagę, napoje roślinne i domowe wypieki.",
     url: "https://example.com/vege-corner",
     imageUrl:
       "https://images.pexels.com/photos/3735153/pexels-photo-3735153.jpeg?auto=compress&cs=tinysrgb&w=800"
@@ -282,9 +300,9 @@ let shops = [
   {
     id: 2,
     name: "Nova Hair Studio",
-    type: "Coiffeur",
+    type: "Fryzjer",
     description:
-      "Salon de coiffure mixte au 1er étage du bâtiment A. Coupes, couleurs, barbe. Ouvert du mardi au samedi.",
+      "Salon fryzjerski damsko‑męski na 1. piętrze budynku A. Strzyżenie, koloryzacja, broda. Otwarte od wtorku do soboty.",
     url: "https://example.com/nova-hair",
     imageUrl:
       "https://images.pexels.com/photos/3993447/pexels-photo-3993447.jpeg?auto=compress&cs=tinysrgb&w=800"
@@ -292,9 +310,9 @@ let shops = [
   {
     id: 3,
     name: "Café Strzelców",
-    type: "Café de quartier",
+    type: "Kawiarnia osiedlowa",
     description:
-      "Petite cafétéria cosy avec terrasse donnant sur la cour intérieure : cafés, pâtisseries et snacks légers.",
+      "Przytulna kawiarnia z tarasem wychodzącym na dziedziniec: kawa, ciasta i lekkie przekąski.",
     url: "https://example.com/cafe-strzelcow",
     imageUrl:
       "https://images.pexels.com/photos/3736397/pexels-photo-3736397.jpeg?auto=compress&cs=tinysrgb&w=800"
@@ -302,9 +320,9 @@ let shops = [
   {
     id: 4,
     name: "Mini Market 24h",
-    type: "Épicerie de nuit",
+    type: "Sklep całodobowy",
     description:
-      "Épicerie ouverte tard avec produits du quotidien, journaux, boissons et snacks, au pied du bâtiment C.",
+      "Sklep czynny do późna z podstawowymi produktami, prasą, napojami i przekąskami, przy budynku C.",
     url: "https://example.com/mini-market",
     imageUrl:
       "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg?auto=compress&cs=tinysrgb&w=800"
@@ -312,9 +330,9 @@ let shops = [
   {
     id: 5,
     name: "Studio Yoga Oksywie",
-    type: "Studio de yoga",
+    type: "Studio jogi",
     description:
-      "Cours de yoga et de relaxation en petits groupes pour les résidents, salle lumineuse au 2e étage du bâtiment B.",
+      "Zajęcia jogi i relaksacji w małych grupach dla mieszkańców, jasna sala na 2. piętrze budynku B.",
     url: "https://example.com/studio-yoga",
     imageUrl:
       "https://images.pexels.com/photos/3822621/pexels-photo-3822621.jpeg?auto=compress&cs=tinysrgb&w=800"
@@ -323,38 +341,38 @@ let shops = [
 
 let nextShopId = shops.length + 1;
 
-// Événements de la résidence (agenda simple)
+// Événements de la résidence (agenda simple) – contenu en polonais
 let events = [
   {
     id: 1,
-    title: "Réunion de copropriété – bâtiment A/B",
+    title: "Spotkanie wspólnoty – budynek A/B",
     date: "2026-02-10",
     time: "19:00",
-    location: "Salle commune, rez-de-chaussée bâtiment B",
+    location: "Sala wspólna, parter budynku B",
     description:
-      "Point sur les travaux prévus, budget 2026 et questions des résidents.",
+      "Omówienie planowanych prac, budżetu na 2026 rok oraz pytań mieszkańców.",
     imageUrl:
       "https://images.pexels.com/photos/1181395/pexels-photo-1181395.jpeg?auto=compress&cs=tinysrgb&w=800"
   },
   {
     id: 2,
-    title: "Nettoyage de printemps des parties communes",
+    title: "Wiosenne sprzątanie części wspólnych",
     date: "2026-03-23",
     time: "10:00",
-    location: "Hall d'entrée principal",
+    location: "Główny hol wejściowy",
     description:
-      "Petit nettoyage collectif des abords de l’immeuble, suivi d’un café entre voisins.",
+      "Wspólne sprzątanie terenu wokół budynków, a potem kawa z sąsiadami.",
     imageUrl:
       "https://images.pexels.com/photos/6195127/pexels-photo-6195127.jpeg?auto=compress&cs=tinysrgb&w=800"
   },
   {
     id: 3,
-    title: "Intervention technique ascenseur bâtiment A",
+    title: "Przegląd techniczny windy – budynek A",
     date: "2026-01-15",
     time: "09:00",
-    location: "Bâtiment A",
+    location: "Budynek A",
     description:
-      "Maintenance préventive de l’ascenseur. Des coupures ponctuelles de service sont à prévoir dans la matinée.",
+      "Przegląd techniczny windy. Możliwe chwilowe przerwy w działaniu w godzinach porannych.",
     imageUrl:
       "https://images.pexels.com/photos/134469/pexels-photo-134469.jpeg?auto=compress&cs=tinysrgb&w=800"
   }
@@ -362,37 +380,37 @@ let events = [
 
 let nextEventId = events.length + 1;
 
-// Signalements (problèmes dans la résidence)
+// Signalements (problèmes dans la résidence) – contenu en polonais
 let reports = [
   {
     id: 1,
-    category: "Éclairage",
-    title: "Ampoule HS au 3e étage, cage B",
+    category: "Oświetlenie",
+    title: "Spalona żarówka na 3. piętrze, klatka B",
     description:
-      "L’ampoule du couloir entre les appartements 34 et 35 ne s’allume plus.",
-    status: "ouvert",
+      "Żarówka na korytarzu między mieszkaniami 34 i 35 nie działa.",
+    status: "otwarty",
     createdAt: new Date().toISOString(),
     imageUrl:
       "https://images.pexels.com/photos/220118/pexels-photo-220118.jpeg?auto=compress&cs=tinysrgb&w=800"
   },
   {
     id: 2,
-    category: "Propreté",
-    title: "Sacs poubelle abandonnés près du local à vélos",
+    category: "Czystość",
+    title: "Worki ze śmieciami przy rowerowni",
     description:
-      "Plusieurs sacs ont été laissés devant la porte du local à vélos, odeurs désagréables.",
-    status: "en cours",
+      "Kilka worków ze śmieciami pozostawionych przed drzwiami do rowerowni, nieprzyjemny zapach.",
+    status: "w toku",
     createdAt: new Date().toISOString(),
     imageUrl:
       "https://images.pexels.com/photos/3735210/pexels-photo-3735210.jpeg?auto=compress&cs=tinysrgb&w=800"
   },
   {
     id: 3,
-    category: "Nuisances sonores",
-    title: "Bruit de perceuse tôt le matin",
+    category: "Hałas",
+    title: "Hałas wiertarki wcześnie rano",
     description:
-      "Travaux répétés entre 7h et 8h dans le bâtiment A, plusieurs jours de suite.",
-    status: "clos",
+      "Powtarzające się prace z użyciem wiertarki między 7:00 a 8:00 w budynku A, kilka dni z rzędu.",
+    status: "zamknięty",
     createdAt: new Date().toISOString(),
     imageUrl:
       "https://images.pexels.com/photos/5691515/pexels-photo-5691515.jpeg?auto=compress&cs=tinysrgb&w=800"
@@ -401,14 +419,14 @@ let reports = [
 
 let nextReportId = reports.length + 1;
 
-// Petits services entre voisins (aide, prêt de matériel, etc.)
+// Petits services entre voisins (aide, prêt de matériel, etc.) – contenu en polonais
 let neighborServices = [
   {
     id: 1,
     kind: "offre",
-    title: "Propose aide pour porter les courses",
+    title: "Pomoc przy noszeniu zakupów",
     description:
-      "Je peux aider les voisins des étages hauts à monter leurs courses le soir en semaine.",
+      "Mogę pomóc sąsiadom z wyższych pięter wnosić ciężkie zakupy wieczorami w tygodniu.",
     createdAt: new Date().toISOString(),
     imageUrl:
       "https://images.pexels.com/photos/4391470/pexels-photo-4391470.jpeg?auto=compress&cs=tinysrgb&w=800"
@@ -416,9 +434,9 @@ let neighborServices = [
   {
     id: 2,
     kind: "demande",
-    title: "Recherche baby-sitting ponctuel",
+    title: "Szukam opieki do dziecka",
     description:
-      "Couple avec un enfant de 4 ans, cherche baby-sitter de confiance dans l’immeuble 1 à 2 soirs par mois.",
+      "Para z 4‑letnim dzieckiem szuka zaufanej opiekunki w budynku, 1–2 wieczory w miesiącu.",
     createdAt: new Date().toISOString(),
     imageUrl:
       "https://images.pexels.com/photos/5088188/pexels-photo-5088188.jpeg?auto=compress&cs=tinysrgb&w=800"
@@ -426,9 +444,9 @@ let neighborServices = [
   {
     id: 3,
     kind: "offre",
-    title: "Prêt d’outils de bricolage",
+    title: "Wypożyczę narzędzia do majsterkowania",
     description:
-      "Perceuse, visseuse, petite caisse à outils disponibles le week-end sur demande.",
+      "Wiertarka, wkrętarka i mała skrzynka z narzędziami dostępne w weekendy po wcześniejszym kontakcie.",
     createdAt: new Date().toISOString(),
     imageUrl:
       "https://images.pexels.com/photos/4792525/pexels-photo-4792525.jpeg?auto=compress&cs=tinysrgb&w=800"
@@ -446,24 +464,81 @@ const avatarPool = [
   "https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg?auto=compress&cs=tinysrgb&w=800"
 ];
 
-let members = [];
-for (let i = 1; i <= 50; i++) {
-  let role = "member";
-  if (i === 1) role = "seo";
-  else if (i === 2 || i === 3) role = "admin";
-  else if (i >= 4 && i <= 7) role = "moderator"; // 4 modos
+// Génère un pool de membres factices (en plus des utilisateurs réels venant de Facebook / Supabase)
+// 200 residents, 10 moderators, 3 admins
+let fakeResidentsCache = null;
 
-  const avatarUrl = avatarPool[i % avatarPool.length];
-  members.push({
-    id: i,
-    nickname: "Résident " + i,
-    email: "resident" + i + "@example.com",
-    avatarUrl,
-    role
-  });
+function buildFakeResidents() {
+  const firstNames = [
+    "Adam",
+    "Agnieszka",
+    "Bartek",
+    "Kasia",
+    "Marek",
+    "Anna",
+    "Piotr",
+    "Magda",
+    "Tomek",
+    "Ola",
+    "Paweł",
+    "Ewa",
+    "Jan",
+    "Monika",
+    "Karol"
+  ];
+  const lastNames = [
+    "Nowak",
+    "Kowalski",
+    "Wiśniewski",
+    "Kaczmarek",
+    "Lewandowski",
+    "Wójcik",
+    "Kamińska",
+    "Zieliński",
+    "Krawczyk",
+    "Szymański",
+    "Dąbrowski",
+    "Pawlak"
+  ];
+
+  const items = [];
+  let counter = 1;
+
+  function createFake(count, role) {
+    for (let i = 0; i < count; i++) {
+      const fname = firstNames[(counter + i) % firstNames.length];
+      const lname = lastNames[(counter * 3 + i) % lastNames.length];
+      const nickname = fname + " " + lname;
+      const avatarUrl =
+        avatarPool[(counter + i) % avatarPool.length];
+
+      items.push({
+        id: "fake-" + counter,
+        nickname,
+        email: null,
+        avatarUrl,
+        role,
+        facebookProfileUrl: null,
+        status: "active"
+      });
+      counter++;
+    }
+  }
+
+  // 3 admins, 10 modos, 200 résidents
+  createFake(3, "admin");
+  createFake(10, "moderator");
+  createFake(200, "resident");
+
+  return items;
 }
 
-let nextMemberId = members.length + 1;
+function getFakeResidents() {
+  if (!fakeResidentsCache) {
+    fakeResidentsCache = buildFakeResidents();
+  }
+  return fakeResidentsCache;
+}
 
 // Sondages (sondages simples à choix unique)
 let polls = [
@@ -950,10 +1025,8 @@ app.delete("/api/moderators/:id", (req, res) => {
 app.get("/api/members", async (req, res) => {
   try {
     if (!supabaseAdmin) {
-      return res.status(500).json({
-        error:
-          "Supabase n'est pas configuré côté serveur (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY manquants)."
-      });
+      // Si Supabase n'est pas configuré, on renvoie au moins les membres factices
+      return res.json({ items: getFakeResidents() });
     }
 
     const { data, error } = await supabaseAdmin
@@ -968,7 +1041,7 @@ app.get("/api/members", async (req, res) => {
         .json({ error: "Impossible de charger les membres depuis Supabase." });
     }
 
-    const items = (data || []).map((row) => ({
+    const realItems = (data || []).map((row) => ({
       id: row.id,
       nickname: row.display_name || "Résident",
       email: null,
@@ -979,6 +1052,8 @@ app.get("/api/members", async (req, res) => {
       facebookProfileUrl: row.facebook_profile_url || null,
       status: row.status || "pending"
     }));
+
+    const items = realItems.concat(getFakeResidents());
 
     res.json({ items });
   } catch (e) {

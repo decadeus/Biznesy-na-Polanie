@@ -1,7 +1,15 @@
 // Composant ClassifiedsNeighbors : annonces diverses entre voisins
 
 function ClassifiedsNeighbors(props) {
-  const { classifieds, classifiedsError, onOpenForm, onSelect } = props;
+  const { classifieds, classifiedsError, onOpenForm, onSelect, lang: rawLang } =
+    props;
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
   const divers = (classifieds || []).filter(
     (c) => c.type !== "immobilier"
   );
@@ -47,7 +55,7 @@ function ClassifiedsNeighbors(props) {
               e(
                 "span",
                 { className: "classified-tag" },
-                "Entre voisins"
+                t(lang, "neigh_tag")
               )
             ),
             e(
@@ -69,15 +77,15 @@ function ClassifiedsNeighbors(props) {
 
   return e(
     "section",
-    { className: "page-section" },
+    { className: "page-section", id: "section-neighbors" },
     e(
       "div",
       { className: "page-section-header" },
-      e("h2", null, "Annonces entre voisins"),
+      e("h2", null, t(lang, "neigh_section_title")),
       e(
         "p",
         null,
-        "Objets à vendre ou à donner, services, cours, entraide dans l’immeuble."
+        t(lang, "neigh_section_subtitle")
       ),
       e(
         "button",
@@ -86,7 +94,7 @@ function ClassifiedsNeighbors(props) {
           onClick: onOpenForm,
           className: "page-section-cta"
         },
-        "Publier une annonce"
+        t(lang, "neigh_section_cta")
       )
     ),
     classifiedsError &&
@@ -97,7 +105,7 @@ function ClassifiedsNeighbors(props) {
       ),
     renderList(
       divers,
-      "Aucune annonce entre voisins pour le moment."
+      t(lang, "neigh_section_empty")
     )
   );
 }

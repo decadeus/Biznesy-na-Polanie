@@ -12,8 +12,17 @@ function MembersTable(props) {
     onSearchChange,
     onChangeRole,
     onDelete,
-    onAdd
+    onAdd,
+    lang: rawLang
   } = props;
+
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
 
   const pageSize = 20;
   const list = Array.isArray(members) ? members : [];
@@ -35,7 +44,10 @@ function MembersTable(props) {
   const seo = filtered.filter((m) => m.role === "super_admin");
   const admins = filtered.filter((m) => m.role === "admin");
   const moderators = filtered.filter((m) => m.role === "moderator");
-  const membersOnly = filtered.filter((m) => m.role === "member");
+  // Les "membres" incluent désormais les rôles "member" (ancien) et "resident" (nouveau)
+  const membersOnly = filtered.filter(
+    (m) => m.role === "member" || m.role === "resident"
+  );
 
   const totalPages = Math.max(1, Math.ceil(membersOnly.length / pageSize));
   const currentPage = Math.min(Math.max(page, 1), totalPages);
@@ -43,12 +55,13 @@ function MembersTable(props) {
   const pageMembers = membersOnly.slice(startIndex, startIndex + pageSize);
 
   function renderRow(m) {
+    const isBaseMember = m.role === "member" || m.role === "resident";
     const canPromoteToModerator =
-      (role === "admin" || role === "super_admin") && m.role === "member";
+      (role === "admin" || role === "super_admin") && isBaseMember;
     const canDemoteToMember =
       (role === "admin" || role === "super_admin") && m.role === "moderator";
     const canDelete =
-      (role === "admin" || role === "super_admin") && m.role === "member";
+      (role === "admin" || role === "super_admin") && isBaseMember;
 
     return e(
       "tr",
@@ -65,17 +78,23 @@ function MembersTable(props) {
       e(
         "td",
         null,
-        m.facebookProfileUrl
-          ? e(
-              "a",
-              {
-                href: m.facebookProfileUrl,
-                target: "_blank",
-                rel: "noreferrer"
-              },
-              "Voir le profil Facebook"
-            )
-          : m.email || "—"
+        e(
+          "button",
+          {
+            type: "button",
+            className: "btn-secondary-light",
+            disabled: !m.facebookProfileUrl,
+            onClick: m.facebookProfileUrl
+              ? () =>
+                  window.open(
+                    m.facebookProfileUrl,
+                    "_blank",
+                    "noopener,noreferrer"
+                  )
+              : undefined
+          },
+          t(lang, "members_btn_view_fb")
+        )
       ),
       e(
         "td",
@@ -84,12 +103,12 @@ function MembersTable(props) {
           "span",
           { className: "member-role member-role-" + m.role },
           m.role === "super_admin"
-            ? "Super admin"
+            ? t(lang, "members_role_super")
             : m.role === "admin"
-            ? "Admin"
+            ? t(lang, "members_role_admin")
             : m.role === "moderator"
-            ? "Modérateur"
-            : "Membre"
+            ? t(lang, "members_role_moderator")
+            : t(lang, "members_role_member")
         )
       ),
       e(
@@ -106,7 +125,7 @@ function MembersTable(props) {
                 className: "btn-secondary-light",
                 onClick: () => onChangeRole && onChangeRole(m.id, "moderator")
               },
-              "Nommer modo"
+              t(lang, "members_btn_make_moderator")
             ),
           canDemoteToMember &&
             e(
@@ -114,9 +133,10 @@ function MembersTable(props) {
               {
                 type: "button",
                 className: "btn-secondary-light",
-                onClick: () => onChangeRole && onChangeRole(m.id, "member")
+                onClick: () =>
+                  onChangeRole && onChangeRole(m.id, "resident")
               },
-              "Rendre membre"
+              t(lang, "members_btn_make_member")
             ),
           canDelete &&
             e(
@@ -126,7 +146,7 @@ function MembersTable(props) {
                 className: "btn-secondary-light",
                 onClick: () => onDelete && onDelete(m.id)
               },
-              "Supprimer"
+              t(lang, "members_btn_delete")
             )
         )
       )
@@ -148,11 +168,11 @@ function MembersTable(props) {
           e(
             "tr",
             null,
-            e("th", null, "Avatar"),
-            e("th", null, "Surnom"),
-            e("th", null, "Profil Facebook"),
-            e("th", null, "Rôle"),
-            e("th", null, "Actions")
+            e("th", null, t(lang, "members_th_avatar")),
+            e("th", null, t(lang, "members_th_nickname")),
+            e("th", null, t(lang, "members_th_profile")),
+            e("th", null, t(lang, "members_th_role")),
+            e("th", null, t(lang, "members_th_actions"))
           )
         ),
         e("tbody", null, items.map((m) => renderRow(m)))
@@ -163,11 +183,11 @@ function MembersTable(props) {
   return e(
     "section",
     { className: "page-section" },
-    e("h2", null, "Membres de la résidence"),
+    e("h2", null, t(lang, "members_title")),
     e(
       "p",
       { className: "page-section-text" },
-      "Gestion simulée des résidents, des rôles et des modérateurs."
+      t(lang, "members_subtitle")
     ),
     e(
       "div",
@@ -175,7 +195,7 @@ function MembersTable(props) {
       e("input", {
         type: "search",
         className: "members-search",
-        placeholder: "Rechercher un membre (surnom ou profil)…",
+        placeholder: t(lang, "members_search_placeholder"),
         value: search,
         onChange: (ev) => onSearchChange && onSearchChange(ev.target.value)
       }),
@@ -187,14 +207,14 @@ function MembersTable(props) {
             className: "btn-secondary-light members-add-btn",
             onClick: () => onAdd && onAdd()
           },
-          "Ajouter un membre"
+          t(lang, "members_add_btn")
         )
     ),
     loading &&
       e(
         "div",
         { className: "empty", style: { marginTop: 8 } },
-        "Chargement des membres…"
+        t(lang, "members_loading")
       ),
     error &&
       e(
@@ -207,11 +227,13 @@ function MembersTable(props) {
       e(
         "div",
         { className: "members-sections" },
-        renderSection("Super admin (SEO)", seo),
-        renderSection("Administrateurs", admins),
-        renderSection("Modérateurs", moderators),
+        renderSection(t(lang, "members_section_super"), seo),
+        renderSection(t(lang, "members_section_admins"), admins),
+        renderSection(t(lang, "members_section_mods"), moderators),
         renderSection(
-          "Membres (page " + currentPage + " / " + totalPages + ")",
+          t(lang, "members_section_members")
+            .replace("{page}", String(currentPage))
+            .replace("{total}", String(totalPages)),
           pageMembers
         )
       ),
@@ -229,15 +251,14 @@ function MembersTable(props) {
             disabled: currentPage === 1,
             onClick: () => onChangePage && onChangePage(currentPage - 1)
           },
-          "Précédent"
+          t(lang, "members_pager_prev")
         ),
         e(
           "span",
           { className: "members-page-indicator" },
-          "Page ",
-          currentPage,
-          " / ",
-          totalPages
+          t(lang, "members_pager_label")
+            .replace("{page}", String(currentPage))
+            .replace("{total}", String(totalPages))
         ),
         e(
           "button",
@@ -247,7 +268,7 @@ function MembersTable(props) {
             disabled: currentPage === totalPages,
             onClick: () => onChangePage && onChangePage(currentPage + 1)
           },
-          "Suivant"
+          t(lang, "members_pager_next")
         )
       )
   );

@@ -2,6 +2,84 @@
 
 const { useEffect, useState } = React;
 
+function LangSwitcher(props) {
+  const lang = props.lang || "fr";
+  const onChange = props.onChange || function () {};
+  const variant = props.variant || "light"; // "light" | "hero"
+
+  function btn(code, label) {
+    const active = lang === code;
+    return e(
+      "button",
+      {
+        type: "button",
+        className:
+          "lang-switch-btn" + (active ? " lang-switch-btn-active" : ""),
+        onClick: function () {
+          if (!active) onChange(code);
+        }
+      },
+      label
+    );
+  }
+
+  const rootClass =
+    "lang-switch" + (variant === "hero" ? " lang-switch-hero" : "");
+
+  return e(
+    "div",
+    { className: rootClass },
+    btn("fr", "🇫🇷"),
+    btn("en", "🇬🇧"),
+    btn("pl", "🇵🇱")
+  );
+}
+
+function SectionsQuickNav(props) {
+  const lang = props.lang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
+
+  function go(id) {
+    try {
+      var el = document.getElementById(id);
+      if (el && el.scrollIntoView) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    } catch (e) {}
+  }
+
+  function btn(id, labelKey) {
+    const label = t(lang, labelKey);
+    return e(
+      "button",
+      {
+        type: "button",
+        className: "sections-nav-btn",
+        onClick: function () {
+          go(id);
+        }
+      },
+      label
+    );
+  }
+
+  return e(
+    "div",
+    { className: "sections-nav" },
+    btn("section-residence", "residence_section_title"),
+    btn("section-real-estate", "re_section_title"),
+    btn("section-neighbors", "neigh_section_title"),
+    btn("section-events", "events_section_title"),
+    btn("section-services", "services_section_title"),
+    btn("section-reports", "reports_section_title")
+  );
+}
+
 function App() {
   const supabase = window.supabaseClient || null;
   const [now, setNow] = useState(new Date());
@@ -54,7 +132,7 @@ function App() {
   const [creatingPoll, setCreatingPoll] = useState(false);
   const [showPollModal, setShowPollModal] = useState(false);
   const [residentId] = useState(() => getOrCreateResidentId());
-  const [adminView, setAdminView] = useState("dashboard"); // "dashboard", "members", "pendingUsers", "stats"
+  const [adminView, setAdminView] = useState("members"); // "members", "pendingUsers", "stats"
   const [selectedShop, setSelectedShop] = useState(null);
   const [showShopModal, setShowShopModal] = useState(false);
   const [moderators, setModerators] = useState([]);
@@ -68,6 +146,18 @@ function App() {
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [pendingProfileUrl, setPendingProfileUrl] = useState("");
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [showAdminNav, setShowAdminNav] = useState(false);
+  const [lang, setLang] = useState(() => {
+    try {
+      if (window.localStorage) {
+        const stored = window.localStorage.getItem("appLang");
+        if (stored) return stored;
+      }
+    } catch (e) {}
+    // Par défaut, on démarre le site en polonais pour les résidents
+    return "pl";
+  });
 
   useEffect(() => {
     async function loadCurrentUser() {
@@ -93,6 +183,14 @@ function App() {
 
     loadCurrentUser();
   }, []);
+
+  useEffect(() => {
+    try {
+      if (window.localStorage) {
+        window.localStorage.setItem("appLang", lang);
+      }
+    } catch (e) {}
+  }, [lang]);
 
   // Synchronise l'URL avec l'état de connexion :
   // - utilisateur connecté  -> /welcome
@@ -878,18 +976,61 @@ function App() {
         }
       });
     }
-    return e(ResidenceHero, {
-      residence,
-      residenceError,
-      classifieds,
-      onOpenOnboarding: function () {
-        setShowOnboarding(true);
-      },
-      onProfileLogin: handleProfileUrlLogin,
-      onSupabaseLogin: handleSupabaseFacebookLogin,
-      onDevLogin: handleDevLogin,
-      authError
-    });
+    return e(
+      React.Fragment,
+      null,
+        e(
+          "div",
+          { className: "public-topbar" },
+        e(
+          "div",
+          { className: "public-topbar-left" },
+          e(
+            "button",
+            {
+              type: "button",
+              className: "public-topbar-link",
+              onClick: handleSupabaseFacebookLogin
+            },
+            window.i18n && window.i18n.t
+              ? window.i18n.t(lang, "topbar_login_fb")
+              : "Se connecter avec Facebook"
+          ),
+          e(
+            "button",
+            {
+              type: "button",
+              className: "public-topbar-link",
+              onClick: handleDevLogin
+            },
+            window.i18n && window.i18n.t
+              ? window.i18n.t(lang, "topbar_dev_access")
+              : "Accès temporaire"
+          )
+        ),
+        e(LangSwitcher, {
+          lang,
+          onChange: setLang
+        })
+      ),
+      e(
+        "div",
+        { className: "public-home" },
+        e(SectionsQuickNav, { lang }),
+        e(ResidenceHero, {
+          residence,
+          residenceError,
+          classifieds,
+          authError,
+          lang
+        }),
+        e(ClassifiedsRealEstate, {
+          classifieds,
+          classifiedsError,
+          lang
+        })
+      )
+    );
   }
 
   if (currentUser.status === "blocked") {
@@ -964,14 +1105,19 @@ function App() {
   const isStaff =
     role === "moderator" || role === "admin" || role === "super_admin";
 
+  const effectiveAdminView =
+    !isStaff || !showAdminNav ? "dashboard" : adminView;
+
   const leftContent =
-    !isStaff || adminView === "dashboard"
+    effectiveAdminView === "dashboard"
       ? e(
           "div",
           { className: "page-sections" },
+          e(SectionsQuickNav, { lang }),
           e(ResidenceCard, {
             residence,
-            residenceError
+            residenceError,
+            lang
           }),
           e(ClassifiedsRealEstate, {
             classifieds,
@@ -983,7 +1129,8 @@ function App() {
             onSelect: (item) => {
               setSelectedAnnouncement(item);
               setShowAnnouncementModal(true);
-            }
+            },
+            lang
           }),
           e(ClassifiedsNeighbors, {
             classifieds,
@@ -995,26 +1142,30 @@ function App() {
             onSelect: (item) => {
               setSelectedAnnouncement(item);
               setShowAnnouncementModal(true);
-            }
+            },
+            lang
           }),
           // Section commerçants détaillée retirée pour garder la version compacte dans la colonne de droite
           e(EventsSection, {
             events,
             eventsError,
-            onOpenForm: () => setShowEventModal(true)
-          }),
-          e(ReportsSection, {
-            reports,
-            reportsError,
-            onOpenForm: () => setShowReportModal(true)
+            onOpenForm: () => setShowEventModal(true),
+            lang
           }),
           e(NeighborServicesSection, {
             services,
             servicesError,
-            onOpenForm: () => setShowServiceModal(true)
+            onOpenForm: () => setShowServiceModal(true),
+            lang
+          }),
+          e(ReportsSection, {
+            reports,
+            reportsError,
+            onOpenForm: () => setShowReportModal(true),
+            lang
           })
         )
-      : adminView === "members"
+      : effectiveAdminView === "members"
       ? e(
           "div",
           { className: "page-sections" },
@@ -1029,14 +1180,17 @@ function App() {
             onSearchChange: setMembersSearch,
             onChangeRole: handleChangeMemberRole,
             onDelete: handleDeleteMember,
-            onAdd: () => setShowAddMemberModal(true)
+            onAdd: () => setShowAddMemberModal(true),
+            lang
           })
         )
-      : adminView === "pendingUsers"
+      : effectiveAdminView === "pendingUsers"
       ? e(
           "div",
           { className: "page-sections" },
-          e(AdminPendingUsers, {})
+          e(AdminPendingUsers, {
+            onCountChange: setPendingRequestsCount
+          })
         )
       : e(
           "div",
@@ -1063,34 +1217,79 @@ function App() {
           e(
             "div",
             { className: "dashboard-hero-title" },
-            "Résidence Mały Kack – Gdynia"
+            window.i18n && window.i18n.t
+              ? window.i18n.t(lang, "dashboard_hero_title")
+              : "Résidence Mały Kack – Gdynia"
           ),
           e(
             "div",
             { className: "dashboard-hero-subtitle" },
-            "Infos pratiques, bus, météo et vie de la résidence."
-          )
+            window.i18n && window.i18n.t
+              ? window.i18n.t(lang, "dashboard_hero_subtitle")
+              : "Infos pratiques, bus, météo et vie de la résidence."
+            ),
+          isStaff &&
+            e(
+              "div",
+              { className: "dashboard-hero-admin-toggle" },
+              e(
+                "button",
+                {
+                  type: "button",
+                  className: "btn-primary",
+                  onClick: function () {
+                    setShowAdminNav(function (prev) {
+                      return !prev;
+                    });
+                  }
+                },
+                window.i18n && window.i18n.t
+                  ? window.i18n.t(
+                      lang,
+                      showAdminNav
+                        ? "admin_hero_btn_close"
+                        : "admin_hero_btn_open"
+                    )
+                  : showAdminNav
+                  ? "Hide admin navigation"
+                  : "Open admin navigation"
+              )
+            )
         ),
         e(
-          "button",
-          {
-            type: "button",
-            className: "dashboard-hero-back",
-            onClick: handleLogoutToHome
-          },
-          "Revenir à la page d'accueil"
+          "div",
+          { className: "dashboard-hero-right" },
+          e(
+            "button",
+            {
+              type: "button",
+              className: "dashboard-hero-back",
+              onClick: handleLogoutToHome
+            },
+            window.i18n && window.i18n.t
+              ? window.i18n.t(lang, "dashboard_back_home")
+              : "Revenir à la page d'accueil"
+          ),
+          e(LangSwitcher, {
+            lang,
+            onChange: setLang,
+            variant: "hero"
+          })
         )
       ),
       e(
         "div",
         { className: "dashboard-main" },
         isStaff &&
+          showAdminNav &&
           e(
             "div",
             { className: "dashboard-main-nav" },
             e(AdminNav, {
               current: adminView,
-              onChange: setAdminView
+              onChange: setAdminView,
+              pendingCount: pendingRequestsCount,
+              lang
             })
           ),
         e(
@@ -1098,14 +1297,13 @@ function App() {
           { className: "dashboard-main-left" },
           leftContent
         ),
-        (!isStaff || adminView === "dashboard") &&
           e(
             "div",
             { className: "dashboard-main-right" },
             e(ProfileBar, {
               name: profileName,
               avatarUrl: profileAvatar,
-              onOpenSettings: null
+            onOpenSettings: null
             }),
             e(BusCard, {
               now,
@@ -1114,15 +1312,18 @@ function App() {
               departures,
               loadedDate,
               loading,
-              error
+            error,
+            lang
             }),
             e(WeatherCard, {
               now,
               weather,
-              weatherError
+            weatherError,
+            lang
             }),
             e(ShopsQuickCard, {
               shops,
+            lang,
               onSelect: (shop) => {
                 setSelectedShop(shop);
                 setShowShopModal(true);
@@ -1130,14 +1331,16 @@ function App() {
             }),
             e(PollsQuickCard, {
               polls,
-              onVote: handleVotePoll
+            onVote: handleVotePoll,
+            lang
             }),
             e(ModeratorsCard, {
               role,
               moderators,
               error: moderatorsError,
               onAdd: handleAddModerator,
-              onRemove: handleRemoveModerator
+            onRemove: handleRemoveModerator,
+            lang
             })
           )
       )

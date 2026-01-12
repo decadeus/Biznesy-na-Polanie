@@ -1,7 +1,15 @@
 // Composant ClassifiedsRealEstate : liste des annonces immobilières
 
 function ClassifiedsRealEstate(props) {
-  const { classifieds, classifiedsError, onSelect, onOpenForm } = props;
+  const { classifieds, classifiedsError, onSelect, onOpenForm, lang: rawLang } =
+    props;
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
   const immobiliers = (classifieds || []).filter(
     (c) => c.type === "immobilier"
   );
@@ -26,12 +34,6 @@ function ClassifiedsRealEstate(props) {
             className: "classified-item",
             onClick: () => onSelect && onSelect(item)
           },
-          e(CardAuthorHeader, {
-            name: item.authorName,
-            avatarUrl: item.authorAvatarUrl,
-            role: item.authorRole,
-            createdAt: item.createdAt
-          }),
           item.imageUrl &&
             e("div", {
               className: "classified-thumb",
@@ -47,7 +49,7 @@ function ClassifiedsRealEstate(props) {
               e(
                 "span",
                 { className: "classified-tag" },
-                "Immobilier"
+                t(lang, "re_tag")
               )
             ),
             e(
@@ -69,15 +71,15 @@ function ClassifiedsRealEstate(props) {
 
   return e(
     "section",
-    { className: "page-section" },
+    { className: "page-section", id: "section-real-estate" },
     e(
       "div",
       { className: "page-section-header" },
-      e("h2", null, "Annonces immobilières"),
+      e("h2", null, t(lang, "re_section_title")),
       e(
         "p",
         null,
-        "Ventes, locations et colocations dans la résidence."
+        t(lang, "re_section_subtitle")
       ),
       onOpenForm &&
         e(
@@ -87,7 +89,7 @@ function ClassifiedsRealEstate(props) {
             onClick: onOpenForm,
             className: "page-section-cta"
           },
-          "Publier une annonce immo"
+          t(lang, "re_section_cta")
         )
     ),
     classifiedsError &&
@@ -98,7 +100,7 @@ function ClassifiedsRealEstate(props) {
       ),
     renderList(
       immobiliers,
-      "Aucune annonce immobilière pour le moment."
+      t(lang, "re_section_empty")
     )
   );
 }
