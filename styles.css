@@ -7,6 +7,7 @@
 html,
 body {
   min-height: 100%;
+  overflow-x: hidden; /* empêche le glissement horizontal de toute la page */
 }
 
 body {
@@ -42,7 +43,7 @@ body {
 }
 
 .dashboard-main-right {
-    flex: 0 1 0;
+  flex: 0 1 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1035,6 +1036,59 @@ body {
   gap: 4px;
 }
 
+/* Cartes membres pour l’affichage mobile */
+.member-section-mobile {
+  overflow: visible;
+}
+
+.member-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.member-card {
+  border-radius: 14px;
+  background: #f3f4f6;
+  padding: 8px 10px;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+}
+
+.member-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.member-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.member-card-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.member-card-body {
+  margin-top: 6px;
+}
+
+.member-card-fb {
+  width: 100%;
+  justify-content: center;
+}
+
+.member-card-actions {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
 .members-pagination {
   margin-top: 10px;
   display: flex;
@@ -1354,6 +1408,31 @@ body {
 
   .stats-main-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .stats-kpi-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stats-bottom-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stats-chart-card,
+  .stats-side-card {
+    padding: 10px 10px;
+  }
+
+  .stats-status-row {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .stats-status-right {
+    align-items: flex-start;
   }
 }
 
@@ -2438,6 +2517,19 @@ body {
   justify-content: flex-end;
 }
 
+/* --- Admin : validation des nouveaux comptes --- */
+.admin-pending-shell .card-content {
+  padding: 8px 8px 10px;
+}
+
+.admin-pending-shell .member-section-title {
+  margin-bottom: 4px;
+}
+
+.admin-pending-shell .member-cards {
+  margin-top: 4px;
+}
+
 /* Petits services entre voisins */
 .services-list {
   display: flex;
@@ -2573,15 +2665,17 @@ body {
   position: sticky;
   top: 0;
   z-index: 10;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  
   padding: 10px 10px;
   border-radius: 999px;
   border: 1px solid #e5e7eb;
   background: #fdfcfb;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.sections-nav-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .page-section {
@@ -2607,3 +2701,136 @@ body {
   background: #e5e7eb;
 }
 
+.sections-nav-select {
+  display: none;
+}
+/* --- Layout responsive global --- */
+@media (max-width: 900px) {
+  body {
+    padding: 20px 12px;
+  }
+
+  .dashboard {
+    width: 100%;
+    gap: 16px;
+  }
+
+  .dashboard-main {
+    flex-direction: column;
+  }
+
+  .dashboard-main-nav {
+    width: 100%;
+    position: sticky;
+    top: 8px;
+    z-index: 15;
+  }
+
+  .card-wrapper {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .card-wrapper.admin-nav-card {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .dashboard-main-right {
+    width: 100%;
+  }
+
+  .profile-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .public-topbar {
+    padding: 8px 12px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .public-home {
+    padding: 0 12px 24px;
+  }
+
+  .dashboard-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 18px 16px;
+    min-height: 200px;
+  }
+
+  .dashboard-hero-inner {
+    max-width: 100%;
+  }
+
+  .dashboard-hero-right {
+    position: static;
+    margin-top: 12px;
+    align-self: flex-end;
+  }
+
+  .hero-card {
+    padding: 24px 16px;
+  }
+
+  /* Sur mobile : on remplace les boutons d’ancrage par une liste déroulante */
+  .sections-nav {
+    position: sticky;
+    top: 0;
+    border-radius: 16px;
+    padding: 6px 10px;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+    z-index: 10;
+  }
+
+  .sections-nav-buttons {
+    display: none;
+  }
+
+  .sections-nav-select {
+    display: block;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 999px;
+    border: 1px solid #d1d5db;
+    font-size: 13px;
+    background: #f9fafb;
+    color: #374151;
+  }
+
+  .members-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .members-add-btn {
+    width: 100%;
+  }
+
+  /* Cartes membres / demandes à valider : utiliser toute la largeur du bloc */
+  .member-cards {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .member-card {
+    width: 100%;
+    border-radius: 18px;
+  }
+
+  /* Table des membres scrollable horizontalement sur mobile */
+  .member-section {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain; /* évite d’entraîner la page */
+  }
+
+  .members-table {
+    width: max-content;     /* largeur basée sur le contenu */
+    min-width: 800px;       /* suffisamment large pour dépasser l'écran */
+  }
+}

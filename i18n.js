@@ -118,7 +118,36 @@
       moderators_role_super: "Super admin",
       moderators_role_admin: "Admin",
       moderators_empty: "Aucun modérateur défini pour le moment.",
-      moderators_cta: "Ajouter / gérer les modérateurs"
+      moderators_cta: "Ajouter / gérer les modérateurs",
+
+      // Tableau des membres (version FR)
+      members_title: "Membres de la résidence",
+      members_subtitle:
+        "Liste des membres et de leurs rôles (administrateurs, modérateurs, résidents).",
+      members_search_placeholder:
+        "Rechercher un membre (pseudo ou profil)…",
+      members_add_btn: "Ajouter un membre",
+      members_loading: "Chargement de la liste des membres…",
+      members_section_super: "Super admin (SEO)",
+      members_section_admins: "Administrateurs",
+      members_section_mods: "Modérateurs",
+      members_section_members: "Résidents (page {page} / {total})",
+      members_th_avatar: "Avatar",
+      members_th_nickname: "Pseudo",
+      members_th_profile: "Profil Facebook",
+      members_th_role: "Rôle",
+      members_th_actions: "Actions",
+      members_role_super: "Super admin",
+      members_role_admin: "Admin",
+      members_role_moderator: "Modérateur",
+      members_role_member: "Résident",
+      members_btn_view_fb: "Voir le profil FB",
+      members_btn_make_moderator: "Donner le rôle de modérateur",
+      members_btn_make_member: "Définir comme résident",
+      members_btn_delete: "Supprimer",
+      members_pager_prev: "Précédente",
+      members_pager_next: "Suivante",
+      members_pager_label: "Page {page} / {total}"
     },
     en: {
       hero_title: "Strzelców 42/40 Residence – Mały Kack, Gdynia",
@@ -235,7 +264,36 @@
       moderators_role_super: "Super admin",
       moderators_role_admin: "Admin",
       moderators_empty: "No moderators defined yet.",
-      moderators_cta: "Add / manage moderators"
+      moderators_cta: "Add / manage moderators",
+
+      // Members table (EN)
+      members_title: "Residence members",
+      members_subtitle:
+        "Sample list of residents and their roles (administrators, moderators).",
+      members_search_placeholder:
+        "Search for a resident (nickname or profile)…",
+      members_add_btn: "Add member",
+      members_loading: "Loading members list…",
+      members_section_super: "Super admin (SEO)",
+      members_section_admins: "Administrators",
+      members_section_mods: "Moderators",
+      members_section_members: "Residents (page {page} / {total})",
+      members_th_avatar: "Avatar",
+      members_th_nickname: "Nickname",
+      members_th_profile: "Facebook profile",
+      members_th_role: "Role",
+      members_th_actions: "Actions",
+      members_role_super: "Super admin",
+      members_role_admin: "Admin",
+      members_role_moderator: "Moderator",
+      members_role_member: "Resident",
+      members_btn_view_fb: "View FB profile",
+      members_btn_make_moderator: "Promote to moderator",
+      members_btn_make_member: "Set as resident",
+      members_btn_delete: "Delete",
+      members_pager_prev: "Previous",
+      members_pager_next: "Next",
+      members_pager_label: "Page {page} / {total}"
     },
     pl: {
       hero_title: "Osiedle Na Polanie – ul. Strzelców 42/40, Mały Kack",

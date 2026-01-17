@@ -68,15 +68,55 @@ function SectionsQuickNav(props) {
     );
   }
 
+  function option(id, labelKey) {
+    const label = t(lang, labelKey);
+    return e("option", { value: id }, label);
+  }
+
+  const placeholder =
+    lang === "pl"
+      ? "Przejdź do sekcji…"
+      : lang === "en"
+      ? "Go to a section…"
+      : "Aller vers une section…";
+
   return e(
     "div",
     { className: "sections-nav" },
-    btn("section-residence", "residence_section_title"),
-    btn("section-real-estate", "re_section_title"),
-    btn("section-neighbors", "neigh_section_title"),
-    btn("section-events", "events_section_title"),
-    btn("section-services", "services_section_title"),
-    btn("section-reports", "reports_section_title")
+    // Boutons pills pour les écrans larges
+    e(
+      "div",
+      { className: "sections-nav-buttons" },
+      btn("section-residence", "residence_section_title"),
+      btn("section-real-estate", "re_section_title"),
+      btn("section-neighbors", "neigh_section_title"),
+      btn("section-events", "events_section_title"),
+      btn("section-services", "services_section_title"),
+      btn("section-reports", "reports_section_title")
+    ),
+    // Liste déroulante pour le responsive mobile
+    e(
+      "select",
+      {
+        className: "sections-nav-select",
+        onChange: function (ev) {
+          var targetId = ev && ev.target && ev.target.value;
+          if (targetId) {
+            go(targetId);
+            // on remet la valeur vide pour pouvoir re-choisir la même section
+            ev.target.value = "";
+          }
+        },
+        defaultValue: ""
+      },
+      e("option", { value: "" }, placeholder),
+      option("section-residence", "residence_section_title"),
+      option("section-real-estate", "re_section_title"),
+      option("section-neighbors", "neigh_section_title"),
+      option("section-events", "events_section_title"),
+      option("section-services", "services_section_title"),
+      option("section-reports", "reports_section_title")
+    )
   );
 }
 
@@ -1041,7 +1081,6 @@ function App() {
       e(
         "div",
         { className: "public-home" },
-        e(SectionsQuickNav, { lang }),
         e(ResidenceHero, {
           residence,
           residenceError,
@@ -1132,6 +1171,10 @@ function App() {
 
   const effectiveAdminView =
     !isStaff || !showAdminNav ? "dashboard" : adminView;
+
+  // Quand on est dans la navigation admin (membres / à valider / stats),
+  // on n'affiche pas la colonne de droite (bus, météo, etc.).
+  const showRightColumn = !(isStaff && showAdminNav);
 
   const leftContent =
     effectiveAdminView === "dashboard"
@@ -1322,13 +1365,14 @@ function App() {
           { className: "dashboard-main-left" },
           leftContent
         ),
+        showRightColumn &&
           e(
             "div",
             { className: "dashboard-main-right" },
             e(ProfileBar, {
               name: profileName,
               avatarUrl: profileAvatar,
-            onOpenSettings: null
+              onOpenSettings: null
             }),
             e(BusCard, {
               now,
@@ -1337,18 +1381,18 @@ function App() {
               departures,
               loadedDate,
               loading,
-            error,
-            lang
+              error,
+              lang
             }),
             e(WeatherCard, {
               now,
               weather,
-            weatherError,
-            lang
+              weatherError,
+              lang
             }),
             e(ShopsQuickCard, {
               shops,
-            lang,
+              lang,
               onSelect: (shop) => {
                 setSelectedShop(shop);
                 setShowShopModal(true);
@@ -1356,16 +1400,16 @@ function App() {
             }),
             e(PollsQuickCard, {
               polls,
-            onVote: handleVotePoll,
-            lang
+              onVote: handleVotePoll,
+              lang
             }),
             e(ModeratorsCard, {
               role,
               moderators,
               error: moderatorsError,
               onAdd: handleAddModerator,
-            onRemove: handleRemoveModerator,
-            lang
+              onRemove: handleRemoveModerator,
+              lang
             })
           )
       )

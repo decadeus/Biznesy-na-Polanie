@@ -7,6 +7,9 @@ function AdminPendingUsers(props) {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
 
+  const isMobile =
+    typeof window !== "undefined" ? window.innerWidth <= 900 : false;
+
   async function loadPending() {
     try {
       setLoading(true);
@@ -191,35 +194,135 @@ function AdminPendingUsers(props) {
           !loading &&
             items &&
             items.length > 0 &&
-            e(
-              "div",
-              { className: "member-section" },
-              e(
-                "h3",
-                { className: "member-section-title" },
-                "Demandes en attente (",
-                items.length,
-                ")"
-              ),
-              e(
-                "table",
-                { className: "members-table" },
-                e(
-                  "thead",
-                  null,
+            (isMobile
+              ? e(
+                  "div",
+                  { className: "member-section member-section-mobile" },
                   e(
-                    "tr",
-                    null,
-                    e("th", null, "Avatar"),
-                    e("th", null, "Nom"),
-                    e("th", null, "Profil Facebook"),
-                    e("th", null, "Date"),
-                    e("th", null, "Actions")
+                    "h3",
+                    { className: "member-section-title" },
+                    "Demandes en attente (",
+                    items.length,
+                    ")"
+                  ),
+                  e(
+                    "div",
+                    { className: "member-cards" },
+                    items.map((u) =>
+                      e(
+                        "div",
+                        { key: u.id, className: "member-card" },
+                        e(
+                          "div",
+                          { className: "member-card-header" },
+                          e("div", {
+                            className: "member-avatar",
+                            style: {
+                              backgroundImage:
+                                "url(" + (u.avatarUrl || defaultAvatar) + ")"
+                            }
+                          }),
+                          e(
+                            "div",
+                            { className: "member-card-main" },
+                            e(
+                              "div",
+                              { className: "member-card-name" },
+                              u.name || "Utilisateur à valider"
+                            ),
+                            e(
+                              "div",
+                              { className: "member-card-date" },
+                              u.createdAt
+                                ? new Date(u.createdAt).toLocaleDateString(
+                                    "fr-FR",
+                                    {
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      year: "numeric"
+                                    }
+                                  )
+                                : "—"
+                            )
+                          )
+                        ),
+                        e(
+                          "div",
+                          { className: "member-card-body" },
+                          e(
+                            "button",
+                            {
+                              type: "button",
+                              className:
+                                "btn-secondary-light member-card-fb",
+                              disabled: !u.facebookProfileUrl,
+                              onClick: u.facebookProfileUrl
+                                ? () =>
+                                    window.open(
+                                      u.facebookProfileUrl,
+                                      "_blank",
+                                      "noopener,noreferrer"
+                                    )
+                                : undefined
+                            },
+                            "Voir le compte FB"
+                          )
+                        ),
+                        e(
+                          "div",
+                          { className: "member-card-actions" },
+                          e(
+                            "button",
+                            {
+                              type: "button",
+                              className: "btn-secondary-light",
+                              onClick: () => actOnUser(u.id, "reject")
+                            },
+                            "Refuser"
+                          ),
+                          e(
+                            "button",
+                            {
+                              type: "button",
+                              className: "btn-secondary",
+                              onClick: () => actOnUser(u.id, "approve")
+                            },
+                            "Accepter"
+                          )
+                        )
+                      )
+                    )
                   )
-                ),
-                e("tbody", null, items.map((u) => renderRow(u)))
-              )
-            )
+                )
+              : e(
+                  "div",
+                  { className: "member-section" },
+                  e(
+                    "h3",
+                    { className: "member-section-title" },
+                    "Demandes en attente (",
+                    items.length,
+                    ")"
+                  ),
+                  e(
+                    "table",
+                    { className: "members-table" },
+                    e(
+                      "thead",
+                      null,
+                      e(
+                        "tr",
+                        null,
+                        e("th", null, "Avatar"),
+                        e("th", null, "Nom"),
+                        e("th", null, "Profil Facebook"),
+                        e("th", null, "Date"),
+                        e("th", null, "Actions")
+                      )
+                    ),
+                    e("tbody", null, items.map((u) => renderRow(u)))
+                  )
+                ))
         )
       )
     )

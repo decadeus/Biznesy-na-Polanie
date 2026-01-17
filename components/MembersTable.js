@@ -54,6 +54,10 @@ function MembersTable(props) {
   const startIndex = (currentPage - 1) * pageSize;
   const pageMembers = membersOnly.slice(startIndex, startIndex + pageSize);
 
+  // Détection simple du mode mobile pour adapter l'affichage
+  const isMobile =
+    typeof window !== "undefined" ? window.innerWidth <= 900 : false;
+
   function renderRow(m) {
     const isBaseMember = m.role === "member" || m.role === "resident";
     const canPromoteToModerator =
@@ -155,6 +159,116 @@ function MembersTable(props) {
 
   function renderSection(title, items) {
     if (!items.length) return null;
+
+    // Version cartes pour mobile : plus lisible que le scroll horizontal
+    if (isMobile) {
+      return e(
+        "div",
+        { className: "member-section member-section-mobile" },
+        e("h3", { className: "member-section-title" }, title),
+        e(
+          "div",
+          { className: "member-cards" },
+          items.map((m) => {
+            const isBaseMember = m.role === "member" || m.role === "resident";
+            const canPromoteToModerator =
+              (role === "admin" || role === "super_admin") && isBaseMember;
+            const canDemoteToMember =
+              (role === "admin" || role === "super_admin") &&
+              m.role === "moderator";
+            const canDelete =
+              (role === "admin" || role === "super_admin") && isBaseMember;
+
+            return e(
+              "div",
+              { key: m.id, className: "member-card" },
+              e(
+                "div",
+                { className: "member-card-header" },
+                e("div", {
+                  className: "member-avatar",
+                  style: { backgroundImage: "url(" + m.avatarUrl + ")" }
+                }),
+                e(
+                  "div",
+                  { className: "member-card-main" },
+                  e("div", { className: "member-card-name" }, m.nickname),
+                  e(
+                    "span",
+                    { className: "member-role member-role-" + m.role },
+                    m.role === "super_admin"
+                      ? t(lang, "members_role_super")
+                      : m.role === "admin"
+                      ? t(lang, "members_role_admin")
+                      : m.role === "moderator"
+                      ? t(lang, "members_role_moderator")
+                      : t(lang, "members_role_member")
+                  )
+                )
+              ),
+              e(
+                "div",
+                { className: "member-card-body" },
+                e(
+                  "button",
+                  {
+                    type: "button",
+                    className: "btn-secondary-light member-card-fb",
+                    disabled: !m.facebookProfileUrl,
+                    onClick: m.facebookProfileUrl
+                      ? () =>
+                          window.open(
+                            m.facebookProfileUrl,
+                            "_blank",
+                            "noopener,noreferrer"
+                          )
+                      : undefined
+                  },
+                  t(lang, "members_btn_view_fb")
+                )
+              ),
+              e(
+                "div",
+                { className: "member-card-actions" },
+                canPromoteToModerator &&
+                  e(
+                    "button",
+                    {
+                      type: "button",
+                      className: "btn-secondary-light",
+                      onClick: () =>
+                        onChangeRole && onChangeRole(m.id, "moderator")
+                    },
+                    t(lang, "members_btn_make_moderator")
+                  ),
+                canDemoteToMember &&
+                  e(
+                    "button",
+                    {
+                      type: "button",
+                      className: "btn-secondary-light",
+                      onClick: () =>
+                        onChangeRole && onChangeRole(m.id, "resident")
+                    },
+                    t(lang, "members_btn_make_member")
+                  ),
+                canDelete &&
+                  e(
+                    "button",
+                    {
+                      type: "button",
+                      className: "btn-secondary-light",
+                      onClick: () => onDelete && onDelete(m.id)
+                    },
+                    t(lang, "members_btn_delete")
+                  )
+              )
+            );
+          })
+        )
+      );
+    }
+
     return e(
       "div",
       { className: "member-section" },
