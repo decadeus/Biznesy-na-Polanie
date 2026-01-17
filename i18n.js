@@ -92,7 +92,8 @@
       bus_no_more_today:
         "Aucun autre départ prévu aujourd'hui pour cet arrêt.",
       bus_footer_with_date: "Horaires ZKM pour le {date}.",
-      bus_footer_generic: "Horaires ZKM."
+      bus_footer_generic: "Horaires ZKM.",
+      bus_fab_label: "Horaires bus"
       
       ,
 
@@ -238,7 +239,8 @@
       bus_loading_short: "Loading...",
       bus_no_more_today: "No more departures planned today for this stop.",
       bus_footer_with_date: "ZKM timetable for {date}.",
-      bus_footer_generic: "ZKM timetable."
+      bus_footer_generic: "ZKM timetable.",
+      bus_fab_label: "Bus timetable"
 
       ,
 
@@ -388,7 +390,8 @@
       bus_no_more_today:
         "Brak kolejnych odjazdów dzisiaj z tego przystanku.",
       bus_footer_with_date: "Rozkład ZKM na dzień {date}.",
-      bus_footer_generic: "Rozkład ZKM."
+      bus_footer_generic: "Rozkład ZKM.",
+      bus_fab_label: "Rozkład jazdy"
 
       ,
 

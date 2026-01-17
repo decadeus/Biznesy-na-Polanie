@@ -44,6 +44,34 @@ function SectionsQuickNav(props) {
           return key;
         };
 
+  const isMobile =
+    typeof window !== "undefined" ? window.innerWidth <= 900 : false;
+
+  const [floating, setFloating] = React.useState(false);
+  const navRef = React.useRef(null);
+  const initialTopRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!isMobile) {
+      setFloating(false);
+      return;
+    }
+
+    function handleScroll() {
+      if (!navRef.current) return;
+      if (initialTopRef.current == null) {
+        const rect = navRef.current.getBoundingClientRect();
+        initialTopRef.current = rect.top + window.scrollY;
+      }
+      const threshold = initialTopRef.current - 8;
+      setFloating(window.scrollY >= threshold);
+    }
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isMobile]);
+
   function go(id) {
     try {
       var el = document.getElementById(id);
@@ -80,9 +108,12 @@ function SectionsQuickNav(props) {
       ? "Go to a section…"
       : "Aller vers une section…";
 
+  const navClassName =
+    "sections-nav" + (floating ? " sections-nav-floating" : "");
+
   return e(
     "div",
-    { className: "sections-nav" },
+    { className: navClassName, ref: navRef },
     // Boutons pills pour les écrans larges
     e(
       "div",

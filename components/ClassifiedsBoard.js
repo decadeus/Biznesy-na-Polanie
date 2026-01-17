@@ -22,13 +22,21 @@ function ClassifiedsBoard(props) {
         e(
           "article",
           { key: item.id, className: "classified-item" },
-          item.imageUrl &&
-            e("div", {
+          e(
+            "div",
+            {
               className: "classified-thumb",
               style: {
-                backgroundImage: "url(" + item.imageUrl + ")"
+                backgroundImage: "url(" + (item.imageUrl || "") + ")"
               }
-            }),
+            },
+            item.imageUrl &&
+              e("img", {
+                src: item.imageUrl,
+                alt: "",
+                className: "classified-thumb-img"
+              })
+          ),
           e(
             "div",
             { className: "classified-body" },

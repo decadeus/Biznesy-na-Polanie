@@ -11,6 +11,9 @@ function EventsSection(props) {
         };
   const items = Array.isArray(events) ? events : [];
 
+  const defaultEventThumb =
+    "https://images.pexels.com/photos/323780/pexels-photo-323780.jpeg?auto=compress&cs=tinysrgb&w=800";
+
   function renderList(list) {
     if (!list.length) {
       return e(
@@ -23,8 +26,9 @@ function EventsSection(props) {
     return e(
       "div",
       { className: "classifieds-cards-grid" },
-      list.map((ev) =>
-        e(
+      list.map((ev) => {
+        const thumbUrl = ev.imageUrl || defaultEventThumb;
+        return e(
           "article",
           { key: ev.id, className: "classified-item" },
           e(CardAuthorHeader, {
@@ -34,11 +38,18 @@ function EventsSection(props) {
             // Pour les événements, on affiche plutôt la date de l'événement
             createdAt: ev.date || ev.createdAt
           }),
-          ev.imageUrl &&
-            e("div", {
+          e(
+            "div",
+            {
               className: "classified-thumb",
-              style: { backgroundImage: "url(" + ev.imageUrl + ")" }
-            }),
+              style: { backgroundImage: "url(" + thumbUrl + ")" }
+            },
+            e("img", {
+              src: thumbUrl,
+              alt: "",
+              className: "classified-thumb-img"
+            })
+          ),
           e(
             "div",
             { className: "classified-body" },
@@ -61,8 +72,8 @@ function EventsSection(props) {
               ev.description ? " — " + ev.description : ""
             )
           )
-        )
-      )
+        );
+      })
     );
   }
 

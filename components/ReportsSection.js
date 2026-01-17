@@ -12,6 +12,9 @@ function ReportsSection(props) {
 
   const items = Array.isArray(reports) ? reports : [];
 
+  const defaultReportThumb =
+    "https://images.pexels.com/photos/323780/pexels-photo-323780.jpeg?auto=compress&cs=tinysrgb&w=800";
+
   function renderList(list) {
     if (!list.length) {
       return e(
@@ -24,8 +27,9 @@ function ReportsSection(props) {
     return e(
       "div",
       { className: "classifieds-cards-grid" },
-      list.map((r) =>
-        e(
+      list.map((r) => {
+        const thumbUrl = r.imageUrl || defaultReportThumb;
+        return e(
           "article",
           { key: r.id, className: "classified-item" },
           e(CardAuthorHeader, {
@@ -34,11 +38,18 @@ function ReportsSection(props) {
             role: r.authorRole,
             createdAt: r.createdAt
           }),
-          r.imageUrl &&
-            e("div", {
+          e(
+            "div",
+            {
               className: "classified-thumb",
-              style: { backgroundImage: "url(" + r.imageUrl + ")" }
-            }),
+              style: { backgroundImage: "url(" + thumbUrl + ")" }
+            },
+            e("img", {
+              src: thumbUrl,
+              alt: "",
+              className: "classified-thumb-img"
+            })
+          ),
           e(
             "div",
             { className: "classified-body" },
@@ -59,8 +70,8 @@ function ReportsSection(props) {
               r.description || ""
             )
           )
-        )
-      )
+        );
+      })
     );
   }
 

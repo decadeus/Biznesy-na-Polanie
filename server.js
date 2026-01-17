@@ -231,7 +231,7 @@ let classifieds = [
     currency: "PLN",
     createdAt: new Date().toISOString(),
     imageUrl:
-      "https://images.pexels.com/photos/37347/office-freelancer-computer-business-37347.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://images.pexels.com/photos/907810/pexels-photo-907810.jpeg?auto=compress&cs=tinysrgb&w=800"
   },
   {
     id: 5,
@@ -255,7 +255,7 @@ let classifieds = [
     currency: "PLN",
     createdAt: new Date().toISOString(),
     imageUrl:
-      "https://images.pexels.com/photos/981157/pexels-photo-981157.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://images.pexels.com/photos/9824416/pexels-photo-9824416.jpeg?auto=compress&cs=tinysrgb&w=800"
   },
   {
     id: 7,
@@ -267,7 +267,7 @@ let classifieds = [
     currency: "PLN",
     createdAt: new Date().toISOString(),
     imageUrl:
-      "https://images.pexels.com/photos/8617930/pexels-photo-8617930.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://images.pexels.com/photos/6502822/pexels-photo-6502822.jpeg?auto=compress&cs=tinysrgb&w=800"
   },
   {
     id: 8,

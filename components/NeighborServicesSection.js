@@ -12,6 +12,9 @@ function NeighborServicesSection(props) {
 
   const items = Array.isArray(services) ? services : [];
 
+  const defaultServiceThumb =
+    "https://images.pexels.com/photos/323780/pexels-photo-323780.jpeg?auto=compress&cs=tinysrgb&w=800";
+
   function renderList(list) {
     if (!list.length) {
       return e(
@@ -24,8 +27,9 @@ function NeighborServicesSection(props) {
     return e(
       "div",
       { className: "classifieds-cards-grid" },
-      list.map((s) =>
-        e(
+      list.map((s) => {
+        const thumbUrl = s.imageUrl || defaultServiceThumb;
+        return e(
           "article",
           { key: s.id, className: "classified-item" },
           e(CardAuthorHeader, {
@@ -34,11 +38,18 @@ function NeighborServicesSection(props) {
             role: s.authorRole,
             createdAt: s.createdAt
           }),
-          s.imageUrl &&
-            e("div", {
+          e(
+            "div",
+            {
               className: "classified-thumb",
-              style: { backgroundImage: "url(" + s.imageUrl + ")" }
-            }),
+              style: { backgroundImage: "url(" + thumbUrl + ")" }
+            },
+            e("img", {
+              src: thumbUrl,
+              alt: "",
+              className: "classified-thumb-img"
+            })
+          ),
           e(
             "div",
             { className: "classified-body" },
@@ -62,8 +73,8 @@ function NeighborServicesSection(props) {
               s.description || ""
             )
           )
-        )
-      )
+        );
+      })
     );
   }
 

@@ -31,11 +31,19 @@ function ShopsSection(props) {
             e(
               "article",
               { key: shop.id, className: "classified-item" },
-              shop.imageUrl &&
-                e("div", {
+              e(
+                "div",
+                {
                   className: "classified-thumb",
-                  style: { backgroundImage: "url(" + shop.imageUrl + ")" }
-                }),
+                  style: { backgroundImage: "url(" + (shop.imageUrl || "") + ")" }
+                },
+                shop.imageUrl &&
+                  e("img", {
+                    src: shop.imageUrl,
+                    alt: "",
+                    className: "classified-thumb-img"
+                  })
+              ),
               e(
                 "div",
                 { className: "classified-body" },

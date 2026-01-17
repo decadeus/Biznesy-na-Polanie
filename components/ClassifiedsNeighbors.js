@@ -14,6 +14,9 @@ function ClassifiedsNeighbors(props) {
     (c) => c.type !== "immobilier"
   );
 
+  const defaultNeighborThumb =
+    "https://images.pexels.com/photos/323780/pexels-photo-323780.jpeg?auto=compress&cs=tinysrgb&w=800";
+
   function renderList(items, emptyLabel) {
     if (!items || items.length === 0) {
       return e(
@@ -26,8 +29,9 @@ function ClassifiedsNeighbors(props) {
     return e(
       "div",
       { className: "classifieds-cards-grid" },
-      items.map((item) =>
-        e(
+      items.map((item) => {
+        const thumbUrl = item.imageUrl || defaultNeighborThumb;
+        return e(
           "article",
           {
             key: item.id,
@@ -40,11 +44,18 @@ function ClassifiedsNeighbors(props) {
             role: item.authorRole,
             createdAt: item.createdAt
           }),
-          item.imageUrl &&
-            e("div", {
+          e(
+            "div",
+            {
               className: "classified-thumb",
-              style: { backgroundImage: "url(" + item.imageUrl + ")" }
-            }),
+              style: { backgroundImage: "url(" + thumbUrl + ")" }
+            },
+            e("img", {
+              src: thumbUrl,
+              alt: "",
+              className: "classified-thumb-img"
+            })
+          ),
           e(
             "div",
             { className: "classified-body" },
@@ -70,8 +81,8 @@ function ClassifiedsNeighbors(props) {
                 item.price + " " + (item.currency || "PLN")
               )
           )
-        )
-      )
+        );
+      })
     );
   }
 

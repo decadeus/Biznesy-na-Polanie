@@ -14,6 +14,9 @@ function ClassifiedsRealEstate(props) {
     (c) => c.type === "immobilier"
   );
 
+  const defaultImmoThumb =
+    "https://images.pexels.com/photos/323780/pexels-photo-323780.jpeg?auto=compress&cs=tinysrgb&w=800";
+
   function renderList(items, emptyLabel) {
     if (!items || items.length === 0) {
       return e(
@@ -26,19 +29,27 @@ function ClassifiedsRealEstate(props) {
     return e(
       "div",
       { className: "classifieds-cards-grid" },
-      items.map((item) =>
-        e(
+      items.map((item) => {
+        const thumbUrl = item.imageUrl || defaultImmoThumb;
+        return e(
           "article",
           {
             key: item.id,
             className: "classified-item",
             onClick: () => onSelect && onSelect(item)
           },
-          item.imageUrl &&
-            e("div", {
+          e(
+            "div",
+            {
               className: "classified-thumb",
-              style: { backgroundImage: "url(" + item.imageUrl + ")" }
-            }),
+              style: { backgroundImage: "url(" + thumbUrl + ")" }
+            },
+            e("img", {
+              src: thumbUrl,
+              alt: "",
+              className: "classified-thumb-img"
+            })
+          ),
           e(
             "div",
             { className: "classified-body" },
@@ -64,8 +75,8 @@ function ClassifiedsRealEstate(props) {
                 item.price + " " + (item.currency || "PLN")
               )
           )
-        )
-      )
+        );
+      })
     );
   }
 
