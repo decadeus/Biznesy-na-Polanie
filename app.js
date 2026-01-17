@@ -189,6 +189,7 @@ function App() {
   const [now, setNow] = useState(new Date());
   const [authChecked, setAuthChecked] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [supabaseUser, setSupabaseUser] = useState(null);
   const [authError, setAuthError] = useState(null);
   const [selectedLine, setSelectedLine] = useState("32");
   const [departures, setDepartures] = useState([]);
@@ -354,7 +355,15 @@ function App() {
           console.warn("Supabase getSession error:", error.message);
           return;
         }
-        if (!data || !data.session) return;
+        if (!data || !data.session) {
+          setSupabaseUser(null);
+          return;
+        }
+        if (data.session.user) {
+          setSupabaseUser(data.session.user);
+        } else {
+          setSupabaseUser(null);
+        }
         const accessToken = data.session.access_token;
         // On informe le backend pour qu'il crée une session locale + currentUser
         const res = await fetch("/api/auth/supabase-login", {
@@ -1687,6 +1696,44 @@ function App() {
     }
   }
 
+  async function handleResumeSessionToWelcome() {
+    if (!supabase) {
+      setAuthError(t(lang, "error_supabase_not_initialized"));
+      return;
+    }
+    try {
+      setAuthError(null);
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data || !data.session) {
+        throw new Error(t(lang, "auth_error_session"));
+      }
+      const accessToken = data.session.access_token;
+      const res = await fetch("/api/auth/supabase-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accessToken })
+      });
+      const payload = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(
+          (payload && payload.error) || t(lang, "auth_error_session")
+        );
+      }
+      if (payload && payload.authenticated && payload.user) {
+        setCurrentUser(payload.user);
+        setAuthChecked(true);
+        window.history.replaceState({}, "", "/welcome");
+        return;
+      }
+      throw new Error(t(lang, "auth_error_session"));
+    } catch (e) {
+      console.warn("Erreur reprise session:", e);
+      setAuthError(
+        e && e.message ? e.message : t(lang, "auth_error_session")
+      );
+    }
+  }
+
   async function handleSupabaseFacebookLogin() {
     if (!supabase) {
       setAuthError(
@@ -1785,6 +1832,7 @@ function App() {
       }
     } finally {
       setCurrentUser(null);
+      setSupabaseUser(null);
       setAuthChecked(true);
       setShowOnboarding(false);
       // Retour explicite sur la page d'accueil
@@ -1801,6 +1849,24 @@ function App() {
   }
 
   if (!currentUser) {
+    const publicUser = supabaseUser || null;
+    const publicUserName =
+      (publicUser && (publicUser.name || publicUser.full_name)) ||
+      (publicUser &&
+        publicUser.user_metadata &&
+        (publicUser.user_metadata.full_name ||
+          publicUser.user_metadata.name ||
+          publicUser.user_metadata.display_name ||
+          publicUser.user_metadata.user_name ||
+          publicUser.user_metadata.preferred_username)) ||
+      t(lang, "profile_default_name");
+    const publicUserAvatar =
+      (publicUser && publicUser.avatarUrl) ||
+      (publicUser &&
+        publicUser.user_metadata &&
+        (publicUser.user_metadata.avatar_url ||
+          publicUser.user_metadata.picture)) ||
+      "";
     if (showOnboarding) {
       return e(OnboardingStep, {
         currentUser: null,
@@ -1823,10 +1889,44 @@ function App() {
       e(
         "div",
         { className: "public-topbar" },
-        e(LangSwitcher, {
-          lang,
-          onChange: setLang
-        })
+        e(
+          "div",
+          { className: "public-topbar-left" },
+          e(LangSwitcher, {
+            lang,
+            onChange: setLang
+          })
+        ),
+        publicUser &&
+          e(
+            "div",
+            { className: "public-topbar-user" },
+            publicUserAvatar
+              ? e("img", {
+                  className: "public-topbar-user-avatar",
+                  src: publicUserAvatar,
+                  alt: publicUserName
+                })
+              : e(
+                  "div",
+                  { className: "public-topbar-user-avatar-fallback" },
+                  (publicUserName || "?").slice(0, 1).toUpperCase()
+                ),
+            e(
+              "span",
+              { className: "public-topbar-user-name" },
+              publicUserName
+            ),
+            e(
+              "button",
+              {
+                type: "button",
+                className: "public-topbar-welcome-btn",
+                onClick: handleResumeSessionToWelcome
+              },
+              t(lang, "public_go_welcome")
+            )
+          )
       ),
       e(
         "div",
@@ -1837,7 +1937,7 @@ function App() {
           classifieds,
           authError,
           lang,
-          onFacebookLogin: authChecked ? handleSupabaseFacebookLogin : null
+          onFacebookLogin: publicUser ? null : handleSupabaseFacebookLogin
         })
       )
     );

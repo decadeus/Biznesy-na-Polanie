@@ -2911,17 +2911,68 @@ body {
 /* Barre de connexion publique en haut de la page d'accueil */
 .public-topbar {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
   padding: 12px 24px;
   gap: 12px;
+  max-width: 1120px;
+  margin: 0 auto;
 }
 
 .public-topbar-left {
   display: flex;
   align-items: center;
   gap: 8px;
-  
+}
+
+.public-topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.public-topbar-user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 2px solid #e2e8f0;
+}
+
+.public-topbar-user-avatar-fallback {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #0f172a;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.public-topbar-user-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.public-topbar-welcome-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.public-topbar-welcome-btn:hover {
+  background: #1f2937;
+  transform: translateY(-1px);
 }
 
 .public-topbar-link {

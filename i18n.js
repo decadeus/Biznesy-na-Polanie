@@ -484,6 +484,7 @@
 
       hero_residence_fallback_name: "Osiedle Mały Kack – Gdynia",
       hero_welcome_prefix: "Bienvenue à",
+      public_go_welcome: "Aller à l'espace",
 
       about_title: "À propos du site – comment ça marche ?",
       about_intro_1:
@@ -1091,6 +1092,7 @@
 
       hero_residence_fallback_name: "Osiedle Mały Kack – Gdynia",
       hero_welcome_prefix: "Welcome to",
+      public_go_welcome: "Go to welcome",
 
       about_title: "About this site – how it works?",
       about_intro_1:
@@ -1704,6 +1706,7 @@
 
       hero_residence_fallback_name: "Osiedle Mały Kack – Gdynia",
       hero_welcome_prefix: "Witamy w",
+      public_go_welcome: "Przejdź do powitania",
 
       about_title: "O serwisie – jak to działa?",
       about_intro_1:
