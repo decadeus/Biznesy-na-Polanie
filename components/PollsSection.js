@@ -17,6 +17,14 @@ function PollsSection(props) {
     return pct + " %";
   }
 
+  const optionStyles = [
+    { bg: "#e0e7ff", border: "#6366f1", text: "#1e1b4b" },
+    { bg: "#ccfbf1", border: "#14b8a6", text: "#134e4a" },
+    { bg: "#ffedd5", border: "#f97316", text: "#7c2d12" },
+    { bg: "#ffe4e6", border: "#ec4899", text: "#831843" },
+    { bg: "#dcfce7", border: "#22c55e", text: "#14532d" }
+  ];
+
   function renderList(list) {
     if (!list.length) {
       return e(
@@ -44,6 +52,19 @@ function PollsSection(props) {
             className: "classified-item",
             onClick: () => onSelect && onSelect(poll)
           },
+          poll.imageUrl &&
+            e(
+              "div",
+              {
+                className: "classified-thumb",
+                style: { backgroundImage: "url(" + poll.imageUrl + ")" }
+              },
+              e("img", {
+                src: poll.imageUrl,
+                alt: "",
+                className: "classified-thumb-img"
+              })
+            ),
           e(
             "div",
             { className: "classified-body" },
@@ -68,15 +89,35 @@ function PollsSection(props) {
             e(
               "div",
               { className: "poll-options" },
-              (poll.options || []).map((opt) =>
-                e(
+              (poll.options || []).map((opt, idx) => {
+                const palette =
+                  optionStyles[idx % optionStyles.length];
+                const optionStyle = isClosed
+                  ? null
+                  : {
+                      backgroundColor: palette.bg,
+                      borderColor: palette.border,
+                      color: palette.text
+                    };
+                const statStyle = isClosed
+                  ? null
+                  : { color: palette.text };
+                return e(
                   "button",
                   {
                     key: opt.id,
                     type: "button",
                     disabled: isClosed || !onVote,
                     className: "poll-option-row",
-                    onClick: () => onVote && onVote(poll.id, opt.id)
+                    style: optionStyle,
+                    onClick: (event) => {
+                      if (event && event.stopPropagation) {
+                        event.stopPropagation();
+                      }
+                      if (onVote) {
+                        onVote(poll.id, opt.id);
+                      }
+                    }
                   },
                   e(
                     "span",
@@ -85,12 +126,12 @@ function PollsSection(props) {
                   ),
                   e(
                     "span",
-                    { className: "poll-option-stat" },
+                    { className: "poll-option-stat", style: statStyle },
                     totalVotes ? (opt.votes || 0) + " • " : "",
                     computePercent(opt, totalVotes)
                   )
-                )
-              )
+                );
+              })
             ),
             poll.endDate &&
               e(

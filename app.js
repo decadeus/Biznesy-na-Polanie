@@ -117,6 +117,7 @@ function SectionsQuickNav(props) {
       btn("section-real-estate", "re_section_title"),
       btn("section-neighbors", "neigh_section_title"),
       btn("section-events", "events_section_title"),
+      btn("section-shops", "shops_section_title"),
       btn("section-services", "services_section_title"),
       btn("section-reports", "reports_section_title")
     ),
@@ -140,6 +141,7 @@ function SectionsQuickNav(props) {
       option("section-real-estate", "re_section_title"),
       option("section-neighbors", "neigh_section_title"),
       option("section-events", "events_section_title"),
+      option("section-shops", "shops_section_title"),
       option("section-services", "services_section_title"),
       option("section-reports", "reports_section_title")
     )
@@ -221,6 +223,8 @@ function App() {
   const [classifiedsError, setClassifiedsError] = useState(null);
   const [shops, setShops] = useState([]);
   const [shopsError, setShopsError] = useState(null);
+  const [creatingShop, setCreatingShop] = useState(false);
+  const [editingShop, setEditingShop] = useState(null);
   const [events, setEvents] = useState([]);
   const [eventsError, setEventsError] = useState(null);
   const [reports, setReports] = useState([]);
@@ -595,6 +599,7 @@ function App() {
 
   function mapPollRow(row) {
     return Object.assign({}, row, {
+      imageUrl: row.image_url || row.imageUrl || null,
       endDate: row.end_date || row.endDate || null,
       options: Array.isArray(row.options) ? row.options : [],
       durationDays: row.duration_days || row.durationDays || 7,
@@ -721,7 +726,8 @@ function App() {
           const items = Array.isArray(data)
             ? data.map(function (row) {
                 return Object.assign({}, row, {
-                  imageUrl: row.image_url || row.imageUrl || null
+                  imageUrl: row.image_url || row.imageUrl || null,
+                  residentId: row.resident_id || row.residentId || null
                 });
               })
             : [];
@@ -853,6 +859,15 @@ function App() {
     const remaining = getRemainingMs(item);
     if (remaining == null) return true;
     return remaining > 0;
+  }
+
+  function isPollClosed(poll) {
+    if (!poll || !poll.endDate) return false;
+    const end = new Date(poll.endDate);
+    if (Number.isNaN(end.getTime())) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return end < today;
   }
 
   async function handleCreateReport(payload) {
@@ -1066,9 +1081,16 @@ function App() {
         description: payload.description || "",
         end_date: payload.endDate,
         options: cleanedOptions,
+        image_url: payload.imageUrl || null,
         duration_days: payload.durationDays || 7,
         resident_id: currentUser ? currentUser.id : null
       };
+      if (payload.imageFile) {
+        insertPayload.image_url = await uploadPostImage(
+          payload.imageFile,
+          "polls"
+        );
+      }
       const { data, error } = await supabase
         .from("polls")
         .insert(insertPayload)
@@ -1098,43 +1120,46 @@ function App() {
           t(lang, "error_poll_vote_supabase")
         );
       }
-      let votesByPoll = {};
-      try {
-        votesByPoll = JSON.parse(
-          window.localStorage.getItem("pollVotesByResident") || "{}"
-        );
-      } catch (e) {
-        votesByPoll = {};
-      }
-      if (votesByPoll[pollId]) {
-        throw new Error(t(lang, "error_poll_already_voted"));
-      }
       const poll = (polls || []).find((p) => p.id === pollId);
       if (!poll) {
         throw new Error(t(lang, "error_poll_not_found"));
       }
-      const updatedOptions = (poll.options || []).map((opt) => {
-        if (Number(opt.id) !== Number(optionId)) return opt;
-        return Object.assign({}, opt, { votes: (opt.votes || 0) + 1 });
+      const { data, error } = await supabase.rpc("vote_poll", {
+        p_poll_id: pollId,
+        p_option_id: optionId
       });
-      const { data, error } = await supabase
-        .from("polls")
-        .update({ options: updatedOptions })
-        .eq("id", pollId)
-        .select("*")
-        .single();
-      if (error) throw error;
-      const updated = data ? mapPollRow(data) : null;
-      if (updated) {
-      setPolls((prev) =>
-        (prev || []).map((p) => (p.id === updated.id ? updated : p))
-        );
+      if (error) {
+        const msg = String(error.message || "");
+        if (msg.includes("already_voted")) {
+          throw new Error(t(lang, "error_poll_already_voted"));
+        }
+        throw error;
       }
-      votesByPoll[pollId] = optionId;
-      window.localStorage.setItem(
-        "pollVotesByResident",
-        JSON.stringify(votesByPoll)
-      );
+      const updatedOptions = Array.isArray(data)
+        ? data
+        : data && Array.isArray(data.options)
+        ? data.options
+        : null;
+      if (updatedOptions) {
+        setPolls((prev) =>
+          (prev || []).map((p) =>
+            p.id === pollId ? Object.assign({}, p, { options: updatedOptions }) : p
+          )
+        );
+      } else {
+        const { data: refreshed, error: refreshError } = await supabase
+          .from("polls")
+          .select("*")
+          .eq("id", pollId)
+          .single();
+        if (refreshError) throw refreshError;
+        const updated = refreshed ? mapPollRow(refreshed) : null;
+        if (updated) {
+          setPolls((prev) =>
+            (prev || []).map((p) => (p.id === updated.id ? updated : p))
+          );
+        }
+      }
     } catch (e) {
       console.error(e);
       setPollsError(
@@ -1198,6 +1223,151 @@ function App() {
       );
     } finally {
       setCreatingEvent(false);
+    }
+  }
+
+  async function handleAddShop(event, payload) {
+    if (event && event.preventDefault) {
+      event.preventDefault();
+    }
+    if (editingShop && editingShop.id) {
+      return handleUpdateShop(editingShop.id, payload);
+    }
+    if (!payload || !payload.name || !payload.type || !payload.description) {
+      return false;
+    }
+    try {
+      setCreatingShop(true);
+      setShopsError(null);
+      if (!supabase) {
+        throw new Error(t(lang, "error_shops_supabase_unavailable"));
+      }
+      if (isMerchantRole && currentUser && currentUser.id) {
+        const existingShop = (shops || []).find(
+          (shop) => String(shop.residentId || "") === String(currentUser.id)
+        );
+        if (existingShop) {
+          throw new Error(t(lang, "error_shop_limit_reached"));
+        }
+      }
+      const insertPayload = {
+        name: payload.name.trim(),
+        type: payload.type.trim(),
+        description: payload.description.trim(),
+        url: payload.url ? payload.url.trim() : null,
+        image_url: null,
+        resident_id:
+          isMerchantRole && currentUser && currentUser.id
+            ? currentUser.id
+            : null
+      };
+      if (payload.imageFile) {
+        insertPayload.image_url = await uploadPostImage(
+          payload.imageFile,
+          "shops"
+        );
+      }
+      const { data, error } = await supabase
+        .from("shops")
+        .insert(insertPayload)
+        .select("*")
+        .single();
+      if (error) throw error;
+      const created = data
+        ? Object.assign({}, data, {
+            imageUrl: data.image_url || data.imageUrl || null
+          })
+        : null;
+      if (created) {
+        setShops((prev) => [created, ...(prev || [])]);
+      }
+      setEditingShop(null);
+      return true;
+    } catch (e) {
+      console.error(e);
+      setShopsError(
+        e && e.message ? e.message : t(lang, "error_shop_create")
+      );
+      return false;
+    } finally {
+      setCreatingShop(false);
+    }
+  }
+
+  async function handleUpdateShop(id, payload) {
+    if (!id || !payload) return false;
+    try {
+      setCreatingShop(true);
+      setShopsError(null);
+      if (!supabase) {
+        throw new Error(t(lang, "error_shops_supabase_unavailable"));
+      }
+      const updatePayload = {
+        name: payload.name ? payload.name.trim() : "",
+        type: payload.type ? payload.type.trim() : "",
+        description: payload.description ? payload.description.trim() : "",
+        url: payload.url ? payload.url.trim() : null,
+        image_url:
+          (editingShop && editingShop.imageUrl) || null
+      };
+      if (payload.imageFile) {
+        updatePayload.image_url = await uploadPostImage(
+          payload.imageFile,
+          "shops"
+        );
+      }
+      const { data, error } = await supabase
+        .from("shops")
+        .update(updatePayload)
+        .eq("id", id)
+        .select("*")
+        .single();
+      if (error) throw error;
+      const updated = data
+        ? Object.assign({}, data, {
+            imageUrl: data.image_url || data.imageUrl || null,
+            residentId: data.resident_id || data.residentId || null
+          })
+        : null;
+      if (updated) {
+        setShops((prev) =>
+          (prev || []).map((item) => (item.id === updated.id ? updated : item))
+        );
+      }
+      setEditingShop(null);
+      return true;
+    } catch (e) {
+      console.error(e);
+      setShopsError(
+        e && e.message ? e.message : t(lang, "error_shop_update")
+      );
+      return false;
+    } finally {
+      setCreatingShop(false);
+    }
+  }
+
+  async function handleDeleteShop(shop) {
+    if (!shop || !shop.id) return;
+    try {
+      setShopsError(null);
+      if (!supabase) {
+        throw new Error(t(lang, "error_shops_supabase_unavailable"));
+      }
+      const { error } = await supabase
+        .from("shops")
+        .delete()
+        .eq("id", shop.id);
+      if (error) throw error;
+      if (editingShop && editingShop.id === shop.id) {
+        setEditingShop(null);
+      }
+      setShops((prev) => (prev || []).filter((s) => s.id !== shop.id));
+    } catch (e) {
+      console.error(e);
+      setShopsError(
+        e && e.message ? e.message : t(lang, "error_shop_delete")
+      );
     }
   }
 
@@ -1575,9 +1745,20 @@ function App() {
         description: payload.description || "",
         end_date: payload.endDate || null,
         options: updatedOptions,
+        image_url:
+          (editingPost &&
+            editingPost.item &&
+            editingPost.item.imageUrl) ||
+          null,
         duration_days: payload.durationDays || 7,
         modified_at: new Date().toISOString()
       };
+      if (payload.imageFile) {
+        updatePayload.image_url = await uploadPostImage(
+          payload.imageFile,
+          "polls"
+        );
+      }
       const { data, error } = await supabase
         .from("polls")
         .update(updatePayload)
@@ -1675,7 +1856,8 @@ function App() {
       currentUser &&
       (currentUser.role === "moderator" ||
         currentUser.role === "admin" ||
-        currentUser.role === "super_admin")
+        currentUser.role === "super_admin" ||
+        currentUser.role === "super-admin")
     ) {
       loadMembers();
     }
@@ -2070,9 +2252,13 @@ function App() {
     );
   }
 
-  const role = currentUser.role || "resident"; // "resident", "moderator", "admin", "super_admin"
+  const role = currentUser.role || "resident"; // "resident", "merchant", "moderator", "admin", "super_admin"
+  const isMerchantRole = role === "merchant" || role === "commercant";
   const isStaff =
-    role === "moderator" || role === "admin" || role === "super_admin";
+    role === "moderator" ||
+    role === "admin" ||
+    role === "super_admin" ||
+    role === "super-admin";
 
   const effectiveAdminView =
     !isStaff || !showAdminNav ? "dashboard" : adminView;
@@ -2080,6 +2266,31 @@ function App() {
   // Quand on est dans la navigation admin (membres / à valider / stats),
   // on n'affiche pas la colonne de droite (bus, météo, etc.).
   const showRightColumn = !(isStaff && showAdminNav);
+
+  const finishedPolls = (polls || [])
+    .filter(isPollClosed)
+    .sort((a, b) => {
+      const dateA = new Date(a.endDate || 0).getTime();
+      const dateB = new Date(b.endDate || 0).getTime();
+      return dateB - dateA;
+    })
+    .slice(0, 2);
+
+  const merchantShop =
+    isMerchantRole && currentUser
+      ? (shops || []).find(
+          (shop) => String(shop.residentId || "") === String(currentUser.id)
+        )
+      : null;
+  const shopsForAdminCard = isStaff
+    ? shops
+    : merchantShop
+    ? [merchantShop]
+    : [];
+  const canAddShop = isStaff || (isMerchantRole && !merchantShop);
+  const canDeleteShop = isStaff || (isMerchantRole && merchantShop);
+  const canEditAllShops = isStaff;
+  const currentUserId = currentUser ? currentUser.id : null;
 
   function getItemAuthorId(item) {
     if (!item) return null;
@@ -2199,7 +2410,10 @@ function App() {
           items: residenceItems,
           error: residenceError,
           lang,
-          isAdmin: role === "admin" || role === "super_admin",
+          isAdmin:
+            role === "admin" ||
+            role === "super_admin" ||
+            role === "super-admin",
           onDelete: handleDeleteResidence,
           onOpenForm: () => setShowResidenceForm(true),
           onSelect: (item) => {
@@ -2393,16 +2607,28 @@ function App() {
               weatherError,
               lang
             }),
-            e(ShopsQuickCard, {
-              shops,
-              lang,
-              onSelect: (shop) => {
-                setSelectedShop(shop);
-                setShowShopModal(true);
-              }
-            }),
+            !isStaff &&
+              e(ShopsSection, {
+                shops,
+                shopsError,
+                lang
+              }),
+            (isStaff || isMerchantRole) &&
+              e(ShopsAdminCard, {
+                shops: shopsForAdminCard,
+                creating: creatingShop,
+                onAdd: handleAddShop,
+                onDelete: handleDeleteShop,
+                canAdd: canAddShop,
+                canDelete: canDeleteShop,
+                onEdit: setEditingShop,
+                editingShop,
+                canEditAll: canEditAllShops,
+                currentUserId,
+                lang
+              }),
             e(PollsQuickCard, {
-              polls,
+              polls: finishedPolls,
               onVote: handleVotePoll,
               lang
             })

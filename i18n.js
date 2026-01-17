@@ -263,8 +263,9 @@
       shop_form_desc_placeholder:
         "Horaires, services proposés, étage/bâtiment, infos pratiques...",
       shop_form_url_label: "Site web (optionnel)",
-      shop_form_image_label: "Photo (URL optionnelle)",
+      shop_form_image_label: "Photo (optionnelle)",
       shop_form_submit: "Ajouter le commerce",
+      shop_form_submit_update: "Mettre à jour",
 
       form_error_title_desc_required:
         "Merci d’indiquer au moins un titre et une description.",
@@ -314,6 +315,11 @@
         "Supabase n'est pas configuré côté client (commerçants indisponibles).",
       error_shops_unavailable:
         "Commerçants indisponibles pour le moment.",
+      error_shop_create: "Impossible d'ajouter le commerce.",
+      error_shop_delete: "Impossible de supprimer le commerce.",
+      error_shop_limit_reached:
+        "Vous avez déjà une fiche commerçant.",
+      error_shop_update: "Impossible de modifier le commerce.",
       error_events_supabase_unavailable:
         "Supabase n'est pas configuré côté client (événements indisponibles).",
       error_events_unavailable: "Événements indisponibles pour le moment.",
@@ -492,7 +498,9 @@
       about_intro_2:
         "Pour l’instant, une partie des contenus (annonces, événements, signalements…) sont des exemples fictifs. Ils servent uniquement à montrer à quoi le site pourrait ressembler lorsque les vrais résidents commenceront à publier. Vous pouvez déjà commencer à y mettre du contenu réel : au fur et à mesure que des annonces et messages seront postés par les habitants, les fausses données seront supprimées et remplacées par du contenu réel.",
       about_intro_3:
-        "Le projet est réalisé à titre entièrement bénévole et le site est 100 % gratuit pour les résidents. Pas de publicité, pas de facturation, pas d’utilisation commerciale des données. Pour l’instant, tout est volontaire et expérimental : l’objectif est de tester si cet outil est utile au quotidien pour les habitants, puis de l’améliorer en fonction des retours.",
+        "Le projet est réalisé à titre entièrement bénévole et le site est 100 % gratuit pour les résidents. Pas de publicité, pas de facturation, pas d’utilisation commerciale des données. L’objectif est d’en faire un outil réellement utilisé au quotidien par les habitants, puis de l’améliorer en continu en fonction des retours.",
+      about_intro_3b:
+        "Aucun post sponsorisé ni commerce sponsorisé n’est autorisé sur la plateforme.",
       about_intro_4:
         "Mon intention est de m’occuper uniquement de la partie technique (maintenance, corrections, nouvelles fonctionnalités), et de confier la gestion du contenu à un ou deux administrateurs de la résidence. Ces administrateurs pourront ensuite ajouter des modérateurs et approuver ou refuser les nouveaux membres.",
       about_intro_5:
@@ -571,10 +579,18 @@
       shops_section_edit_button: "Modifier ma fiche",
       shops_section_edit_simulation:
         "Simulation: ici le commerçant pourrait modifier sa fiche via Supabase.",
+      shops_admin_add_button: "Ajouter un commerce",
+      shops_admin_hide_form: "Fermer",
+      shops_admin_edit_button: "Modifier",
+      shops_admin_delete_button: "Supprimer",
+      shops_admin_delete_confirm: "Supprimer ce commerce ?",
+      shops_admin_title: "Commerces dans la résidence",
+      shops_admin_empty: "Aucun commerce à gérer.",
+      shops_admin_limit_reached:
+        "Vous avez déjà une fiche commerçant.",
       shops_section_empty:
-        "Les fiches commerçants seront gérées par les modérateurs.",
-      shops_section_notice:
-        "L’ajout et la modification des commerces seront réservés aux comptes commerçants/administration (via Supabase).",
+        "Aucun commerce référencé pour le moment.",
+      shops_section_notice: "",
 
       polls_section_title: "Sondages entre voisins",
       polls_section_subtitle:
@@ -884,8 +900,9 @@
       shop_form_desc_placeholder:
         "Hours, services, floor/building, practical info...",
       shop_form_url_label: "Website (optional)",
-      shop_form_image_label: "Photo (optional URL)",
+      shop_form_image_label: "Photo (optional)",
       shop_form_submit: "Add shop",
+      shop_form_submit_update: "Update",
 
       form_error_title_desc_required:
         "Please provide at least a title and a description.",
@@ -932,6 +949,10 @@
       error_shops_supabase_unavailable:
         "Supabase is not configured on the client (shops unavailable).",
       error_shops_unavailable: "Shops unavailable for now.",
+      error_shop_create: "Failed to add the shop.",
+      error_shop_delete: "Failed to delete the shop.",
+      error_shop_limit_reached: "You already have a shop listing.",
+      error_shop_update: "Failed to update the shop.",
       error_events_supabase_unavailable:
         "Supabase is not configured on the client (events unavailable).",
       error_events_unavailable: "Events unavailable for now.",
@@ -1100,7 +1121,9 @@
       about_intro_2:
         "For now, part of the content (listings, events, reports…) are sample entries. They are only here to show what the site could look like when real residents start posting. You can already add real content: as residents post announcements and messages, the sample data will be removed and replaced with real content.",
       about_intro_3:
-        "This project is entirely volunteer‑run and the site is 100% free for residents. No ads, no billing, no commercial use of data. For now, everything is voluntary and experimental: the goal is to see if this tool is useful in daily life, then improve it based on feedback.",
+        "This project is entirely volunteer‑run and the site is 100% free for residents. No ads, no billing, no commercial use of data. The goal is to make it a tool that residents actually use every day, and to keep improving it based on feedback.",
+      about_intro_3b:
+        "No sponsored posts or sponsored businesses are allowed on the platform.",
       about_intro_4:
         "My intention is to handle only the technical side (maintenance, fixes, new features) and entrust content management to one or two residence administrators. These administrators can then add moderators and approve or reject new members.",
       about_intro_5:
@@ -1178,10 +1201,17 @@
       shops_section_edit_button: "Edit my listing",
       shops_section_edit_simulation:
         "Simulation: the shop owner could edit their listing here via Supabase.",
+      shops_admin_add_button: "Add shop",
+      shops_admin_hide_form: "Close",
+      shops_admin_edit_button: "Edit",
+      shops_admin_delete_button: "Delete",
+      shops_admin_delete_confirm: "Delete this shop?",
+      shops_admin_title: "Shops in the residence",
+      shops_admin_empty: "No shops to manage.",
+      shops_admin_limit_reached: "You already have a shop listing.",
       shops_section_empty:
-        "Shop listings will be managed by moderators.",
-      shops_section_notice:
-        "Adding and editing shops will be reserved for merchant/admin accounts (via Supabase).",
+        "No shop listed for now.",
+      shops_section_notice: "",
 
       polls_section_title: "Neighbour polls",
       polls_section_subtitle:
@@ -1496,8 +1526,9 @@
       shop_form_desc_placeholder:
         "Godziny, usługi, piętro/budynek, informacje praktyczne...",
       shop_form_url_label: "Strona www (opcjonalnie)",
-      shop_form_image_label: "Zdjęcie (opcjonalny URL)",
+      shop_form_image_label: "Zdjęcie (opcjonalnie)",
       shop_form_submit: "Dodaj sklep",
+      shop_form_submit_update: "Zaktualizuj",
 
       form_error_title_desc_required:
         "Podaj co najmniej tytuł i opis.",
@@ -1545,6 +1576,10 @@
       error_shops_supabase_unavailable:
         "Supabase nie jest skonfigurowany po stronie klienta (sklepy niedostępne).",
       error_shops_unavailable: "Sklepy są chwilowo niedostępne.",
+      error_shop_create: "Nie udało się dodać sklepu.",
+      error_shop_delete: "Nie udało się usunąć sklepu.",
+      error_shop_limit_reached: "Masz już własną wizytówkę sklepu.",
+      error_shop_update: "Nie udało się zaktualizować sklepu.",
       error_events_supabase_unavailable:
         "Supabase nie jest skonfigurowany po stronie klienta (wydarzenia niedostępne).",
       error_events_unavailable: "Wydarzenia są chwilowo niedostępne.",
@@ -1714,7 +1749,9 @@
       about_intro_2:
         "Na razie część treści (ogłoszenia, wydarzenia, zgłoszenia…) to przykładowe dane. Mają one jedynie pokazać, jak serwis może wyglądać, gdy prawdziwi mieszkańcy zaczną publikować. Możesz już dodawać realne treści: gdy mieszkańcy będą publikować ogłoszenia i wiadomości, dane przykładowe zostaną usunięte i zastąpione rzeczywistymi.",
       about_intro_3:
-        "Projekt jest w pełni wolontariacki, a serwis jest w 100% darmowy dla mieszkańców. Bez reklam, bez opłat, bez komercyjnego wykorzystania danych. Na razie wszystko ma charakter dobrowolny i eksperymentalny – celem jest sprawdzenie, czy to narzędzie jest przydatne na co dzień, a następnie jego rozwijanie na podstawie opinii.",
+        "Projekt jest w pełni wolontariacki, a serwis jest w 100% darmowy dla mieszkańców. Bez reklam, bez opłat, bez komercyjnego wykorzystania danych. Celem jest stworzenie narzędzia, z którego mieszkańcy będą realnie korzystać na co dzień, i jego stałe ulepszanie na podstawie opinii.",
+      about_intro_3b:
+        "Na platformie nie są dozwolone posty sponsorowane ani sponsorowane sklepy.",
       about_intro_4:
         "Moim celem jest zajmowanie się wyłącznie częścią techniczną (utrzymanie, poprawki, nowe funkcje), a zarządzanie treściami przekazać jednemu lub dwóm administratorom osiedla. Administratorzy będą mogli dodawać moderatorów oraz zatwierdzać lub odrzucać nowych członków.",
       about_intro_5:
@@ -1793,10 +1830,17 @@
       shops_section_edit_button: "Edytuj mój wpis",
       shops_section_edit_simulation:
         "Symulacja: tutaj właściciel mógłby edytować swoją wizytówkę przez Supabase.",
+      shops_admin_add_button: "Dodaj sklep",
+      shops_admin_hide_form: "Zamknij",
+      shops_admin_edit_button: "Edytuj",
+      shops_admin_delete_button: "Usuń",
+      shops_admin_delete_confirm: "Usunąć ten sklep?",
+      shops_admin_title: "Sklepy w rezydencji",
+      shops_admin_empty: "Brak sklepów do zarządzania.",
+      shops_admin_limit_reached: "Masz już własną wizytówkę sklepu.",
       shops_section_empty:
-        "Wizytówki sklepów będą zarządzane przez moderatorów.",
-      shops_section_notice:
-        "Dodawanie i edycja sklepów będą dostępne tylko dla kont kupców/administracji (przez Supabase).",
+        "Brak sklepów na osiedlu.",
+      shops_section_notice: "",
 
       polls_section_title: "Ankiety sąsiedzkie",
       polls_section_subtitle:

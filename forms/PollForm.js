@@ -12,6 +12,7 @@ function PollForm(props) {
   const [title, setTitle] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [endDate, setEndDate] = React.useState("");
+  const [imageFile, setImageFile] = React.useState(null);
   const [options, setOptions] = React.useState(() => [
     t(lang, "poll_option_yes"),
     t(lang, "poll_option_no")
@@ -23,6 +24,7 @@ function PollForm(props) {
     setTitle(initialValues.title || "");
     setDescription(initialValues.description || "");
     setEndDate(initialValues.endDate || "");
+    setImageFile(null);
     const initialOptions = Array.isArray(initialValues.options)
       ? initialValues.options.map((opt) =>
           typeof opt === "string" ? opt : opt && opt.label ? opt.label : ""
@@ -83,6 +85,7 @@ function PollForm(props) {
           id: idx + 1,
           label
         })),
+        imageFile,
         durationDays
       });
     }
@@ -90,6 +93,7 @@ function PollForm(props) {
     setTitle("");
     setDescription("");
     setEndDate("");
+    setImageFile(null);
     setOptions([t(lang, "poll_option_yes"), t(lang, "poll_option_no")]);
     setDurationDays(7);
   }
@@ -182,6 +186,19 @@ function PollForm(props) {
             t(lang, "poll_add_option")
           )
       )
+    ),
+    e(
+      "div",
+      { className: "classified-form-full" },
+      e("label", null, t(lang, "form_image_label")),
+      e("input", {
+        type: "file",
+        accept: "image/*",
+        onChange: (e) =>
+          setImageFile(
+            e && e.target && e.target.files ? e.target.files[0] : null
+          )
+      })
     ),
     e(
       "div",

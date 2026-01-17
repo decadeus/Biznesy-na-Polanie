@@ -2,7 +2,8 @@
 // (création / édition des fiches sera gérée plus tard via Supabase pour les comptes "commerçants")
 
 function ShopsSection(props) {
-  const { shops, shopsError, isMerchant, merchantShopId, lang: rawLang } = props;
+  const { shops, shopsError, isMerchant, merchantShopId, lang: rawLang } =
+    props;
   const lang = rawLang || "fr";
   const t =
     window.i18n && window.i18n.t
@@ -13,7 +14,7 @@ function ShopsSection(props) {
 
   return e(
     "section",
-    { className: "page-section" },
+    { className: "page-section", id: "section-shops" },
     e(
       "div",
       { className: "page-section-header" },
@@ -87,11 +88,9 @@ function ShopsSection(props) {
                         type: "button",
                         className: "shop-edit-btn",
                         onClick: () =>
-                          alert(
-                          t(lang, "shops_section_edit_simulation")
-                          )
+                          alert(t(lang, "shops_section_edit_simulation"))
                       },
-                    t(lang, "shops_section_edit_button")
+                      t(lang, "shops_section_edit_button")
                     )
               )
             )

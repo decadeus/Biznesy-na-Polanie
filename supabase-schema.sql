@@ -4,6 +4,24 @@
 create type public.resident_status as enum ('pending', 'active', 'blocked');
 create type public.resident_role as enum ('resident', 'moderator', 'admin');
 
+do $$
+begin
+  if not exists (
+    select 1 from pg_enum
+    where enumlabel = 'super_admin'
+      and enumtypid = 'public.resident_role'::regtype
+  ) then
+    alter type public.resident_role add value 'super_admin';
+  end if;
+  if not exists (
+    select 1 from pg_enum
+    where enumlabel = 'merchant'
+      and enumtypid = 'public.resident_role'::regtype
+  ) then
+    alter type public.resident_role add value 'merchant';
+  end if;
+end $$;
+
 -- 2) Table principale des résidents
 create table public.residents (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -46,7 +64,7 @@ using (
   exists (
     select 1 from public.residents r
     where r.id = auth.uid()
-      and r.role in ('moderator', 'admin')
+      and r.role in ('moderator', 'admin', 'super_admin')
   )
 );
 
@@ -57,7 +75,7 @@ using (
   exists (
     select 1 from public.residents r
     where r.id = auth.uid()
-      and r.role in ('moderator', 'admin')
+      and r.role in ('moderator', 'admin', 'super_admin')
   )
 );
 
@@ -177,11 +195,72 @@ create table if not exists public.classifieds (
 -- 5.2 Commerçants de la résidence
 create table if not exists public.shops (
   id          bigint generated always as identity primary key,
+  resident_id uuid references public.residents(id),
   name        text not null,
   type        text not null,
   description text not null,
   url         text,
   image_url   text
+);
+
+alter table public.shops
+  add column if not exists resident_id uuid references public.residents(id);
+
+create unique index if not exists shops_unique_resident
+on public.shops(resident_id);
+
+alter table public.shops enable row level security;
+
+drop policy if exists "shops_select_all" on public.shops;
+create policy "shops_select_all"
+on public.shops
+for select
+using (true);
+
+drop policy if exists "shops_insert_admin_or_merchant" on public.shops;
+create policy "shops_insert_admin_or_merchant"
+on public.shops
+for insert
+with check (
+  exists (
+    select 1 from public.residents r
+    where r.id = auth.uid()
+      and r.role in ('admin', 'super_admin')
+  )
+  or (
+    auth.uid() = resident_id
+    and exists (
+      select 1 from public.residents r
+      where r.id = auth.uid()
+        and r.role = 'merchant'
+    )
+  )
+);
+
+drop policy if exists "shops_update_admin_or_owner" on public.shops;
+create policy "shops_update_admin_or_owner"
+on public.shops
+for update
+using (
+  exists (
+    select 1 from public.residents r
+    where r.id = auth.uid()
+      and r.role in ('admin', 'super_admin')
+  )
+  or auth.uid() = resident_id
+);
+
+drop policy if exists "shops_delete_admin_or_owner" on public.shops;
+create policy "shops_delete_admin_or_owner"
+on public.shops
+for delete
+using (
+  exists (
+    select 1 from public.residents r
+    where r.id = auth.uid()
+      and r.role in ('admin', 'super_admin')
+  )
+  or auth.uid() = resident_id
 );
 
 -- 5.3 Événements de la résidence
@@ -232,12 +311,97 @@ create table if not exists public.polls (
   resident_id uuid references public.residents(id),
   title       text not null,
   description text,
+  image_url   text,
   options     jsonb not null,
   end_date    date,
   created_at  timestamptz default now(),
   modified_at timestamptz,
   duration_days integer default 7
 );
+
+alter table public.polls
+  add column if not exists image_url text;
+
+-- 5.6bis Votes des sondages
+create table if not exists public.poll_votes (
+  id          bigint generated always as identity primary key,
+  poll_id     bigint not null references public.polls(id) on delete cascade,
+  resident_id uuid references public.residents(id),
+  option_id   integer not null,
+  created_at  timestamptz default now()
+);
+
+create unique index if not exists poll_votes_unique
+on public.poll_votes(poll_id, resident_id);
+
+alter table public.poll_votes enable row level security;
+
+drop policy if exists "poll_votes_select_all" on public.poll_votes;
+create policy "poll_votes_select_all"
+on public.poll_votes
+for select
+using (true);
+
+drop policy if exists "poll_votes_insert_self" on public.poll_votes;
+create policy "poll_votes_insert_self"
+on public.poll_votes
+for insert
+with check (auth.uid() = resident_id);
+
+drop function if exists public.vote_poll(p_poll_id bigint, p_option_id integer);
+create function public.vote_poll(p_poll_id bigint, p_option_id integer)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_poll public.polls%rowtype;
+  v_options jsonb;
+begin
+  if auth.uid() is null then
+    raise exception 'not_authenticated';
+  end if;
+
+  select * into v_poll
+  from public.polls
+  where id = p_poll_id
+  for update;
+
+  if not found then
+    raise exception 'poll_not_found';
+  end if;
+
+  insert into public.poll_votes(poll_id, resident_id, option_id)
+  values (p_poll_id, auth.uid(), p_option_id);
+
+  v_options := (
+    select jsonb_agg(
+      case
+        when (opt->>'id')::int = p_option_id then
+          jsonb_set(
+            opt,
+            '{votes}',
+            to_jsonb(coalesce((opt->>'votes')::int, 0) + 1),
+            true
+          )
+        else opt
+      end
+    )
+    from jsonb_array_elements(v_poll.options) opt
+  );
+
+  update public.polls
+  set options = v_options,
+      modified_at = now()
+  where id = p_poll_id;
+
+  return v_options;
+exception
+  when unique_violation then
+    raise exception 'already_voted';
+end;
+$$;
 
 -- 5.6 Feedback / contact (bugs, design, idées de fonctionnalités)
 create table if not exists public.feedback (

@@ -65,6 +65,11 @@ function PollPostModal(props) {
             )
           ),
           e("div", { className: "divider" }),
+          item.imageUrl &&
+            e("div", {
+              className: "announcement-modal-image",
+              style: { backgroundImage: "url(" + item.imageUrl + ")" }
+            }),
           e(
             "div",
             { className: "announcement-modal-body" },

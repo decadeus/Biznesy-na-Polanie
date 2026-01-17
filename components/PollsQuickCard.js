@@ -17,6 +17,8 @@ function PollsQuickCard(props) {
   function renderPoll(poll, index) {
     const options = Array.isArray(poll.options) ? poll.options : [];
     const totalVotes = options.reduce((sum, o) => sum + (o.votes || 0), 0);
+    const isClosed =
+      poll.endDate && new Date(poll.endDate) < new Date().setHours(0, 0, 0, 0);
 
     const radius = 16;
     const circumference = 2 * Math.PI * radius;
@@ -111,6 +113,7 @@ function PollsQuickCard(props) {
                 key: opt.id,
                 type: "button",
                 className: "poll-quick-option",
+                disabled: isClosed || !onVote,
                 onClick: () => onVote && onVote(poll.id, opt.id)
               },
               e("span", {

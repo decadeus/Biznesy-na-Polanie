@@ -1,7 +1,8 @@
 // Formulaire pour ajouter un commerce de la résidence
 
 function ShopForm(props) {
-  const { creating, onSubmit, lang: rawLang } = props;
+  const { creating, onSubmit, initialValues, isEditing, lang: rawLang } =
+    props;
   const lang = rawLang || "fr";
   const t =
     window.i18n && window.i18n.t
@@ -13,7 +14,16 @@ function ShopForm(props) {
   const [localType, setLocalType] = React.useState("");
   const [localDescription, setLocalDescription] = React.useState("");
   const [localUrl, setLocalUrl] = React.useState("");
-  const [localImageUrl, setLocalImageUrl] = React.useState("");
+  const [imageFile, setImageFile] = React.useState(null);
+
+  React.useEffect(() => {
+    if (!initialValues) return;
+    setLocalName(initialValues.name || "");
+    setLocalType(initialValues.type || "");
+    setLocalDescription(initialValues.description || "");
+    setLocalUrl(initialValues.url || "");
+    setImageFile(null);
+  }, [initialValues && initialValues.id]);
 
   async function handleSubmit(e) {
     const ok = await onSubmit(e, {
@@ -21,14 +31,14 @@ function ShopForm(props) {
       type: localType,
       description: localDescription,
       url: localUrl,
-      imageUrl: localImageUrl
+      imageFile
     });
     if (ok) {
       setLocalName("");
       setLocalType("");
       setLocalDescription("");
       setLocalUrl("");
-      setLocalImageUrl("");
+      setImageFile(null);
     }
   }
 
@@ -109,10 +119,12 @@ function ShopForm(props) {
           null,
           t(lang, "shop_form_image_label"),
           e("input", {
-            type: "url",
-            value: localImageUrl,
-            onChange: (ev) => setLocalImageUrl(ev.target.value),
-            placeholder: "https://…"
+            type: "file",
+            accept: "image/*",
+            onChange: (ev) =>
+              setImageFile(
+                ev && ev.target && ev.target.files ? ev.target.files[0] : null
+              )
           })
         )
       )
@@ -124,7 +136,11 @@ function ShopForm(props) {
         disabled: creating,
         className: "classified-form-submit"
       },
-      creating ? t(lang, "form_saving") : t(lang, "shop_form_submit")
+      creating
+        ? t(lang, "form_saving")
+        : isEditing
+        ? t(lang, "shop_form_submit_update")
+        : t(lang, "shop_form_submit")
     )
   );
 }

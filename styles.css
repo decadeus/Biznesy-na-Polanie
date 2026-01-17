@@ -2116,6 +2116,11 @@ body {
   cursor: pointer;
 }
 
+.poll-quick-option:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .poll-quick-dot {
   width: 8px;
   height: 8px;
@@ -2487,7 +2492,8 @@ body {
 }
 
 .feedback-block-title {
-  margin-top: 12px;
+  margin-top: 24px;
+  margin-bottom: 14px;
   font-size: 13px;
   font-weight: 600;
   color: #374151;
@@ -2573,6 +2579,99 @@ body {
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
+}
+
+.shop-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.shop-delete-btn {
+  margin-top: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #fca5a5;
+  background: #fff1f2;
+  color: #b91c1c;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.shops-admin-panel {
+  margin: 10px 0 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px dashed rgba(148, 163, 184, 0.8);
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.shops-admin-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.shops-admin-card .shops-admin-actions {
+  margin-top: 6px;
+}
+
+.shops-admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.shops-admin-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: #ffffff;
+}
+
+.shops-admin-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.shops-admin-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.shops-admin-item-type {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.shops-admin-item-photo {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+}
+
+.shops-admin-empty {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.shops-admin-limit {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #6b7280;
 }
 
 @media (max-width: 900px) {
