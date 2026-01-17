@@ -194,6 +194,7 @@ function App() {
   const [supabaseUser, setSupabaseUser] = useState(null);
   const [supabaseSessionChecked, setSupabaseSessionChecked] =
     useState(false);
+  const [minLoadingDone, setMinLoadingDone] = useState(false);
   const [showPublicHome, setShowPublicHome] = useState(false);
   const [authError, setAuthError] = useState(null);
   const [selectedLine, setSelectedLine] = useState("32");
@@ -338,6 +339,13 @@ function App() {
       }
     } catch (e) {}
   }, [lang]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMinLoadingDone(true);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (!currentUser) {
@@ -2074,11 +2082,23 @@ function App() {
     window.history.replaceState({}, "", "/welcome");
   }
 
-  if (!authChecked) {
+  if (!authChecked || !minLoadingDone) {
     return e(
       "div",
       { className: "app-loading" },
-      t(lang, "auth_loading_session")
+      e(
+        "div",
+        { className: "app-loading-illustration" },
+        e("div", { className: "app-loading-icon" }, "🏠"),
+        e("div", { className: "app-loading-title" }, t(lang, "auth_loading_session")),
+        e(
+          "div",
+          { className: "app-loading-dots", "aria-hidden": true },
+          e("span", { className: "app-loading-dot" }),
+          e("span", { className: "app-loading-dot" }),
+          e("span", { className: "app-loading-dot" })
+        )
+      )
     );
   }
 
