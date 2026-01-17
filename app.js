@@ -190,6 +190,8 @@ function App() {
   const [authChecked, setAuthChecked] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [supabaseUser, setSupabaseUser] = useState(null);
+  const [supabaseSessionChecked, setSupabaseSessionChecked] =
+    useState(false);
   const [authError, setAuthError] = useState(null);
   const [selectedLine, setSelectedLine] = useState("32");
   const [departures, setDepartures] = useState([]);
@@ -348,6 +350,7 @@ function App() {
   // Si une session Supabase existe, on tente de la synchroniser avec le backend
   useEffect(() => {
     if (!supabase) return;
+    let isMounted = true;
     (async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
@@ -355,15 +358,16 @@ function App() {
           console.warn("Supabase getSession error:", error.message);
           return;
         }
+        if (!isMounted) return;
         if (!data || !data.session) {
           setSupabaseUser(null);
-          return;
-        }
-        if (data.session.user) {
+        } else if (data.session.user) {
           setSupabaseUser(data.session.user);
         } else {
           setSupabaseUser(null);
         }
+        setSupabaseSessionChecked(true);
+        if (!data || !data.session) return;
         const accessToken = data.session.access_token;
         // On informe le backend pour qu'il crée une session locale + currentUser
         const res = await fetch("/api/auth/supabase-login", {
@@ -385,8 +389,31 @@ function App() {
         }
       } catch (e) {
         console.warn("Supabase sync exception:", e);
+      } finally {
+        if (isMounted) {
+          setSupabaseSessionChecked(true);
+        }
       }
     })();
+
+    const authSub = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!isMounted) return;
+        if (session && session.user) {
+          setSupabaseUser(session.user);
+        } else {
+          setSupabaseUser(null);
+        }
+        setSupabaseSessionChecked(true);
+      }
+    );
+
+    return () => {
+      isMounted = false;
+      if (authSub && authSub.data && authSub.data.subscription) {
+        authSub.data.subscription.unsubscribe();
+      }
+    };
   }, [supabase]);
 
   useEffect(() => {
@@ -1883,6 +1910,8 @@ function App() {
         }
       });
     }
+    const shouldShowFacebookButton =
+      supabaseSessionChecked && !publicUser;
     return e(
       React.Fragment,
       null,
@@ -1937,7 +1966,9 @@ function App() {
           classifieds,
           authError,
           lang,
-          onFacebookLogin: publicUser ? null : handleSupabaseFacebookLogin
+          onFacebookLogin: shouldShowFacebookButton
+            ? handleSupabaseFacebookLogin
+            : null
         })
       )
     );
