@@ -11,9 +11,15 @@ function ResidenceHero(props) {
     } = props;
   
     const lang = rawLang || "fr";
+    const t =
+      window.i18n && window.i18n.t
+        ? window.i18n.t
+        : function (_lang, key) {
+            return key;
+          };
     const residenceName =
       (residence && (residence.name || residence.displayName)) ||
-      "Résidence Mały Kack";
+      t(lang, "hero_residence_fallback_name");
 
     return e(
       "div",
@@ -27,11 +33,7 @@ function ResidenceHero(props) {
           e(
             "h1",
             { className: "hero-welcome-title" },
-            lang === "pl"
-              ? "Witamy w " + residenceName
-              : lang === "en"
-              ? "Welcome to " + residenceName
-              : "Bienvenue à " + residenceName
+            t(lang, "hero_welcome_prefix") + " " + residenceName
           ),
           onFacebookLogin &&
             e(
@@ -42,11 +44,7 @@ function ResidenceHero(props) {
                 onClick: onFacebookLogin
               },
               e("span", { className: "public-topbar-icon-fb" }, "f"),
-              lang === "pl"
-                ? "Zaloguj się przez Facebooka"
-                : lang === "en"
-                ? "Log in with Facebook"
-                : "Se connecter avec Facebook"
+              t(lang, "topbar_login_fb")
             )
         ),
         e(

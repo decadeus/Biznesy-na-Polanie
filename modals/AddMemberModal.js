@@ -1,7 +1,14 @@
 // Modal pour ajouter un membre (email + rôle)
 
 function AddMemberModal(props) {
-  const { open, creating, onSubmit, onClose } = props;
+  const { open, creating, onSubmit, onClose, lang: rawLang } = props;
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
   const [email, setEmail] = React.useState("");
   const [role, setRole] = React.useState("member");
 
@@ -17,7 +24,7 @@ function AddMemberModal(props) {
   function handleSubmit(e) {
     e.preventDefault();
     if (!email.trim()) {
-      alert("Merci de saisir l'URL du profil Facebook du membre.");
+      alert(t(lang, "add_member_alert_missing"));
       return;
     }
     onSubmit && onSubmit({ email: email.trim(), role });
@@ -41,7 +48,7 @@ function AddMemberModal(props) {
             e(
               "div",
               { className: "line-badge" },
-              e("span", null, "Ajouter un membre")
+              e("span", null, t(lang, "add_member_modal_title"))
             ),
             e(
               "button",
@@ -59,7 +66,7 @@ function AddMemberModal(props) {
                   cursor: "pointer"
                 }
               },
-              "Fermer"
+              t(lang, "modal_close")
             )
           ),
           e("div", { className: "divider" }),
@@ -72,28 +79,40 @@ function AddMemberModal(props) {
               e(
                 "div",
                 { className: "classified-form-col" },
-              e("label", null, "URL du profil Facebook"),
+              e("label", null, t(lang, "add_member_label_fb")),
                 e("input", {
                 type: "url",
                   value: email,
                   onChange: (ev) => setEmail(ev.target.value),
-                placeholder: "https://www.facebook.com/...",
+                placeholder: t(lang, "add_member_placeholder_fb"),
                   required: true
                 })
               ),
               e(
                 "div",
                 { className: "classified-form-col" },
-                e("label", null, "Rôle"),
+                e("label", null, t(lang, "add_member_role_label")),
                 e(
                   "select",
                   {
                     value: role,
                     onChange: (ev) => setRole(ev.target.value)
                   },
-                  e("option", { value: "member" }, "Membre"),
-                  e("option", { value: "admin" }, "Admin"),
-                  e("option", { value: "moderator" }, "Modérateur")
+                  e(
+                    "option",
+                    { value: "member" },
+                    t(lang, "add_member_role_member")
+                  ),
+                  e(
+                    "option",
+                    { value: "admin" },
+                    t(lang, "add_member_role_admin")
+                  ),
+                  e(
+                    "option",
+                    { value: "moderator" },
+                    t(lang, "add_member_role_moderator")
+                  )
                 )
               )
             ),
@@ -107,7 +126,9 @@ function AddMemberModal(props) {
                   className: "btn-primary",
                   disabled: creating
                 },
-                creating ? "Ajout..." : "Ajouter"
+                creating
+                  ? t(lang, "add_member_submit_loading")
+                  : t(lang, "add_member_submit")
               )
             )
           )

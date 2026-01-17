@@ -2,8 +2,20 @@
 // Demande un nom/pseudo + code d'accès du groupe + URL du profil Facebook
 
 function OnboardingStep(props) {
-  const { currentUser, onCompleted, onCancel, initialFacebookProfileUrl } =
-    props;
+  const {
+    currentUser,
+    onCompleted,
+    onCancel,
+    initialFacebookProfileUrl,
+    lang: rawLang
+  } = props;
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
   const derivedInitialUrl =
     (initialFacebookProfileUrl ||
       (currentUser && currentUser.facebookProfileUrl) ||
@@ -23,9 +35,7 @@ function OnboardingStep(props) {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!facebookProfileUrl.trim() || !groupName.trim()) {
-      setError(
-        "Merci de renseigner le nom du groupe Facebook et l'URL de votre profil Facebook."
-      );
+      setError(t(lang, "onboarding_error_missing"));
       return;
     }
     try {
@@ -44,12 +54,10 @@ function OnboardingStep(props) {
       if (!res.ok) {
         const msg =
           (data && data.error) ||
-          "Impossible de finaliser votre première connexion pour le moment.";
+          t(lang, "onboarding_error_submit");
         throw new Error(msg);
       }
-      setSuccessMessage(
-        "Votre demande a été envoyée, un modérateur doit maintenant la valider."
-      );
+      setSuccessMessage(t(lang, "onboarding_success"));
       if (onCompleted) {
         onCompleted(data && data.user ? data.user : null);
       }
@@ -58,7 +66,7 @@ function OnboardingStep(props) {
       setError(
         err && err.message
           ? err.message
-          : "Erreur lors de la finalisation de votre première connexion."
+          : t(lang, "onboarding_error_generic")
       );
     } finally {
       setSubmitting(false);
@@ -80,23 +88,19 @@ function OnboardingStep(props) {
           e(
             "div",
             { className: "line-badge" },
-            e("span", null, "Première connexion")
+            e("span", null, t(lang, "onboarding_badge"))
           )
         ),
         e(
           "div",
           { className: "onboarding-body" },
-          e(
-            "h2",
-            null,
-            "Demande d'accès à l'espace résidents"
-          ),
+          e("h2", null, t(lang, "onboarding_title")),
           e(
             "p",
             null,
-            "Pour confirmer que vous faites bien partie du groupe Facebook de la résidence, merci d'indiquer le ",
-            e("strong", null, "nom exact du groupe Facebook"),
-            " ainsi que l'URL de votre profil Facebook."
+            t(lang, "onboarding_intro_before"),
+            e("strong", null, t(lang, "onboarding_intro_strong")),
+            t(lang, "onboarding_intro_after")
           ),
           e(
             "form",
@@ -107,25 +111,29 @@ function OnboardingStep(props) {
               e(
                 "span",
                 { className: "form-label" },
-                "Nom du groupe Facebook"
+                t(lang, "onboarding_group_label")
               ),
               e("input", {
                 type: "text",
                 value: groupName,
                 onChange: (ev) => setGroupName(ev.target.value),
-                placeholder: "Nom exact indiqué dans le groupe",
+                placeholder: t(lang, "onboarding_group_placeholder"),
                 className: "input"
               })
             ),
             e(
               "label",
               { className: "form-field" },
-              e("span", { className: "form-label" }, "URL de votre profil Facebook"),
+              e(
+                "span",
+                { className: "form-label" },
+                t(lang, "onboarding_profile_label")
+              ),
               e("input", {
                 type: "url",
                 value: facebookProfileUrl,
                 onChange: (ev) => setFacebookProfileUrl(ev.target.value),
-                placeholder: "https://www.facebook.com/...",
+                placeholder: t(lang, "onboarding_profile_placeholder"),
                 className: "input"
               })
             ),
@@ -151,7 +159,9 @@ function OnboardingStep(props) {
                   className: "btn-primary",
                   disabled: submitting
                 },
-                submitting ? "Envoi en cours..." : "Envoyer ma demande"
+                submitting
+                  ? t(lang, "onboarding_submit_loading")
+                  : t(lang, "onboarding_submit")
               ),
               onCancel &&
                 e(
@@ -162,14 +172,14 @@ function OnboardingStep(props) {
                     onClick: onCancel,
                     disabled: submitting
                   },
-                  "Annuler"
+                  t(lang, "onboarding_cancel")
                 )
             )
           ),
           e(
             "p",
             { className: "onboarding-note" },
-            "Une fois votre demande validée par un modérateur, vous aurez accès à l'espace résidents (annonces, sondages, signalements, etc.)."
+            t(lang, "onboarding_note")
           )
         )
       )

@@ -8,8 +8,16 @@ function StatsContentBlock(props) {
     validatedSeries,
     inProgress,
     pending,
-    refused30Days
+    refused30Days,
+    lang: rawLang
   } = props;
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
 
   const maxLine = Math.max(...monthlySeries);
 
@@ -87,7 +95,7 @@ function StatsContentBlock(props) {
       )
     ),
     e("hr", { className: "stats-divider" }),
-    e("h4", { className: "stats-section-title" }, "Statut"),
+    e("h4", { className: "stats-section-title" }, t(lang, "stats_status_title")),
     e(
       "div",
       { className: "stats-status-row" },
@@ -138,14 +146,14 @@ function StatsContentBlock(props) {
           "div",
           { className: "stats-donut-legend-item" },
           e("span", { className: "stats-legend-dot stats-status-valid" }),
-          e("span", null, "En cours"),
+          e("span", null, t(lang, "stats_status_in_progress")),
           e("span", { className: "stats-donut-legend-count" }, inProgress)
         ),
         e(
           "div",
           { className: "stats-donut-legend-item" },
           e("span", { className: "stats-legend-dot stats-status-pending" }),
-          e("span", null, "À valider"),
+          e("span", null, t(lang, "stats_status_pending")),
           e("span", { className: "stats-donut-legend-count" }, pending)
         )
       )
@@ -153,34 +161,43 @@ function StatsContentBlock(props) {
     e(
       "div",
       { className: "stats-refused-line" },
-      e("span", null, "Refusés (30 derniers jours)"),
+      e("span", null, t(lang, "stats_refused_30")),
       e("span", { className: "stats-donut-legend-count" }, refused30Days)
     ),
     e(
       "div",
       { className: "stats-status-total" },
-      "Total validés depuis le départ : ",
-      e("strong", null, totalValidated)
+      t(lang, "stats_total_validated_prefix").replace(
+        "{n}",
+        String(totalValidated)
+      )
     )
   );
 }
 
 function StatsOverview(props) {
-  const { polls, members, classifieds } = props;
+  const { polls, members, classifieds, lang: rawLang } = props;
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
 
   const months = [
-    "Jan",
-    "Fév",
-    "Mar",
-    "Avr",
-    "Mai",
-    "Juin",
-    "Juil",
-    "Août",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Déc"
+    t(lang, "month_jan"),
+    t(lang, "month_feb"),
+    t(lang, "month_mar"),
+    t(lang, "month_apr"),
+    t(lang, "month_may"),
+    t(lang, "month_jun"),
+    t(lang, "month_jul"),
+    t(lang, "month_aug"),
+    t(lang, "month_sep"),
+    t(lang, "month_oct"),
+    t(lang, "month_nov"),
+    t(lang, "month_dec")
   ];
 
   // Valeurs simulées
@@ -226,11 +243,11 @@ function StatsOverview(props) {
     e(
       "section",
       { className: "page-section stats-header" },
-      e("h2", null, "Vue d’ensemble statistique"),
+      e("h2", null, t(lang, "stats_overview_title")),
       e(
         "p",
         { className: "page-section-text" },
-        "Évolution simulée de la communauté, des interactions et des contenus publiés."
+        t(lang, "stats_overview_subtitle")
       ),
       e(
         "div",
@@ -238,30 +255,30 @@ function StatsOverview(props) {
         e(
           "div",
           { className: "stats-kpi-card" },
-          e("div", { className: "stats-kpi-label" }, "Membres actuels"),
+          e("div", { className: "stats-kpi-label" }, t(lang, "stats_kpi_members_label")),
           e("div", { className: "stats-kpi-value" }, totalMembers || 255),
-          e("div", { className: "stats-kpi-sub" }, "+18% sur 12 mois (simulation)")
+          e("div", { className: "stats-kpi-sub" }, t(lang, "stats_kpi_members_sub"))
         ),
         e(
           "div",
           { className: "stats-kpi-card" },
-          e("div", { className: "stats-kpi-label" }, "Interactions / mois"),
+          e("div", { className: "stats-kpi-label" }, t(lang, "stats_kpi_interactions_label")),
           e("div", { className: "stats-kpi-value" }, "150"),
-          e("div", { className: "stats-kpi-sub" }, "messages, sondages, annonces")
+          e("div", { className: "stats-kpi-sub" }, t(lang, "stats_kpi_interactions_sub"))
         ),
         e(
           "div",
           { className: "stats-kpi-card" },
-          e("div", { className: "stats-kpi-label" }, "Sondages actifs"),
+          e("div", { className: "stats-kpi-label" }, t(lang, "stats_kpi_polls_label")),
           e("div", { className: "stats-kpi-value" }, totalPolls || 5),
-          e("div", { className: "stats-kpi-sub" }, "sur les 3 derniers mois (simulation)")
+          e("div", { className: "stats-kpi-sub" }, t(lang, "stats_kpi_polls_sub"))
         ),
         e(
           "div",
           { className: "stats-kpi-card" },
-          e("div", { className: "stats-kpi-label" }, "Annonces publiées"),
+          e("div", { className: "stats-kpi-label" }, t(lang, "stats_kpi_classifieds_label")),
           e("div", { className: "stats-kpi-value" }, totalClassifieds || 8),
-          e("div", { className: "stats-kpi-sub" }, "immobilier + entre voisins")
+          e("div", { className: "stats-kpi-sub" }, t(lang, "stats_kpi_classifieds_sub"))
         )
       )
     ),
@@ -271,14 +288,14 @@ function StatsOverview(props) {
       e(
         "div",
         { className: "stats-chart-card" },
-        e("h3", { className: "stats-section-title" }, "Croissance des membres & interactions"),
+        e("h3", { className: "stats-section-title" }, t(lang, "stats_chart_main_title")),
         e(
           "div",
           { className: "stats-legend" },
           e("span", { className: "stats-legend-dot stats-legend-members" }),
-          e("span", null, "Membres"),
+          e("span", null, t(lang, "stats_chart_members_label")),
           e("span", { className: "stats-legend-dot stats-legend-interactions" }),
-          e("span", null, "Interactions")
+          e("span", null, t(lang, "stats_chart_interactions_label"))
         ),
         e(
           "div",
@@ -327,58 +344,64 @@ function StatsOverview(props) {
       "section",
       { className: "page-section stats-bottom-grid" },
       e(StatsContentBlock, {
-        title: "Sondages par mois",
+        title: t(lang, "stats_polls_per_month"),
         months,
         monthlySeries: pollsByMonth,
         validatedSeries: pollsValidatedByMonth,
         inProgress: 58,
         pending: 9,
-        refused30Days: 5
+        refused30Days: 5,
+        lang
       }),
       e(StatsContentBlock, {
-        title: "Annonces immobilières par mois",
+        title: t(lang, "stats_realestate_per_month"),
         months,
         monthlySeries: classifiedsByMonth,
         validatedSeries: classifiedsByMonth,
         inProgress: 32,
         pending: 4,
-        refused30Days: 3
+        refused30Days: 3,
+        lang
       }),
       e(StatsContentBlock, {
-        title: "Annonces entre voisins par mois",
+        title: t(lang, "stats_neighbors_per_month"),
         months,
         monthlySeries: annoncesVoisinsByMonth,
         validatedSeries: annoncesVoisinsValidated,
         inProgress: 18,
         pending: 3,
-        refused30Days: 2
+        refused30Days: 2,
+        lang
       }),
       e(StatsContentBlock, {
-        title: "Événements par mois",
+        title: t(lang, "stats_events_per_month"),
         months,
         monthlySeries: eventsByMonth,
         validatedSeries: eventsValidated,
         inProgress: 6,
         pending: 1,
-        refused30Days: 1
+        refused30Days: 1,
+        lang
       }),
       e(StatsContentBlock, {
-        title: "Signalements par mois",
+        title: t(lang, "stats_reports_per_month"),
         months,
         monthlySeries: reportsByMonth,
         validatedSeries: reportsValidated,
         inProgress: 10,
         pending: 2,
-        refused30Days: 1
+        refused30Days: 1,
+        lang
       }),
       e(StatsContentBlock, {
-        title: "Petits services par mois",
+        title: t(lang, "stats_services_per_month"),
         months,
         monthlySeries: servicesByMonth,
         validatedSeries: servicesValidated,
         inProgress: 14,
         pending: 2,
-        refused30Days: 1
+        refused30Days: 1,
+        lang
       })
     )
   );

@@ -1,7 +1,14 @@
 // Composant ProfileBar : affichage du profil (édition via popup)
 
 function ProfileBar(props) {
-  const { name, avatarUrl } = props;
+  const { name, avatarUrl, lang: rawLang } = props;
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
 
   return e(
     "div",
@@ -19,14 +26,18 @@ function ProfileBar(props) {
     e(
       "div",
       { className: "profile-main" },
-      e("div", { className: "profile-name" }, name || "Résident de Mały Kack"),
+      e(
+        "div",
+        { className: "profile-name" },
+        name || t(lang, "profile_default_name")
+      ),
       null
     ),
     e(
       "div",
       { className: "profile-users" },
       e("span", { className: "profile-users-count" }, "235"),
-      " membres"
+      " " + t(lang, "profile_members_label")
     )
   );
 }

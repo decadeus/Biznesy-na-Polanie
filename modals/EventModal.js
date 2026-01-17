@@ -1,8 +1,23 @@
 // Modal pour création d'événement
 
 function EventModal(props) {
-  const { open, creating, onSubmit, onClose } = props;
+  const {
+    open,
+    creating,
+    onSubmit,
+    onClose,
+    initialValues,
+    isEditing,
+    lang: rawLang
+  } = props;
   if (!open) return null;
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
 
   return e(
     "div",
@@ -22,7 +37,13 @@ function EventModal(props) {
             e(
               "div",
               { className: "line-badge" },
-              e("span", null, "Nouvel événement")
+              e(
+                "span",
+                null,
+                isEditing
+                  ? t(lang, "event_modal_edit")
+                  : t(lang, "event_modal_new")
+              )
             ),
             e(
               "button",
@@ -40,11 +61,17 @@ function EventModal(props) {
                   cursor: "pointer"
                 }
               },
-              "Fermer"
+              t(lang, "modal_close")
             )
           ),
           e("div", { className: "divider" }),
-          e(EventForm, { creating, onSubmit })
+          e(EventForm, {
+            creating,
+            onSubmit,
+            initialValues,
+            isEditing,
+            lang
+          })
         )
       )
     )

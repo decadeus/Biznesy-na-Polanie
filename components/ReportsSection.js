@@ -1,7 +1,7 @@
 // Composant ReportsSection : signalements des résidents
 
 function ReportsSection(props) {
-  const { reports, reportsError, onOpenForm, lang: rawLang } = props;
+  const { reports, reportsError, onOpenForm, onSelect, lang: rawLang } = props;
   const lang = rawLang || "fr";
   const t =
     window.i18n && window.i18n.t
@@ -20,7 +20,7 @@ function ReportsSection(props) {
       return e(
         "div",
         { className: "empty" },
-        "Aucun signalement pour le moment."
+        t(lang, "reports_section_empty")
       );
     }
 
@@ -31,12 +31,17 @@ function ReportsSection(props) {
         const thumbUrl = r.imageUrl || defaultReportThumb;
         return e(
           "article",
-          { key: r.id, className: "classified-item" },
+          {
+            key: r.id,
+            className: "classified-item",
+            onClick: () => onSelect && onSelect(r)
+          },
           e(CardAuthorHeader, {
             name: r.authorName,
             avatarUrl: r.authorAvatarUrl,
             role: r.authorRole,
-            createdAt: r.createdAt
+            createdAt: r.createdAt,
+            lang
           }),
           e(
             "div",

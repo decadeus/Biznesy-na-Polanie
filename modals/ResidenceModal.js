@@ -1,17 +1,8 @@
-// Modal pour création de sondage
+// Modal pour ajouter une info résidence
 
-function PollModal(props) {
-  const {
-    open,
-    creating,
-    onSubmit,
-    onClose,
-    initialValues,
-    isEditing,
-    lang: rawLang
-  } = props;
+function ResidenceModal(props) {
+  const { open, saving, error, onSubmit, onClose, lang } = props;
   if (!open) return null;
-  const lang = rawLang || "fr";
   const t =
     window.i18n && window.i18n.t
       ? window.i18n.t
@@ -40,9 +31,7 @@ function PollModal(props) {
               e(
                 "span",
                 null,
-                isEditing
-                  ? t(lang, "poll_modal_edit")
-                  : t(lang, "poll_modal_new")
+                t(lang || "fr", "residence_modal_new")
               )
             ),
             e(
@@ -61,14 +50,18 @@ function PollModal(props) {
                   cursor: "pointer"
                 }
               },
-              t(lang, "modal_close")
+              t(lang || "fr", "modal_close")
             )
           ),
           e("div", { className: "divider" }),
-          e(PollForm, { creating, onSubmit, initialValues, isEditing, lang })
+          e(ResidenceAdminForm, {
+            saving,
+            error,
+            onSave: onSubmit,
+            lang
+          })
         )
       )
     )
   );
 }
-

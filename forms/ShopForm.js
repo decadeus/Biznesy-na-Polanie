@@ -1,7 +1,14 @@
 // Formulaire pour ajouter un commerce de la résidence
 
 function ShopForm(props) {
-  const { creating, onSubmit } = props;
+  const { creating, onSubmit, lang: rawLang } = props;
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
   const [localName, setLocalName] = React.useState("");
   const [localType, setLocalType] = React.useState("");
   const [localDescription, setLocalDescription] = React.useState("");
@@ -40,12 +47,12 @@ function ShopForm(props) {
         e(
           "label",
           null,
-          "Nom du commerce",
+          t(lang, "shop_form_name_label"),
           e("input", {
             type: "text",
             value: localName,
             onChange: (ev) => setLocalName(ev.target.value),
-            placeholder: "Ex: Vege Corner"
+            placeholder: t(lang, "shop_form_name_placeholder")
           })
         )
       ),
@@ -55,12 +62,12 @@ function ShopForm(props) {
         e(
           "label",
           null,
-          "Type",
+          t(lang, "shop_form_type_label"),
           e("input", {
             type: "text",
             value: localType,
             onChange: (ev) => setLocalType(ev.target.value),
-            placeholder: "Ex: Magasin vegan, Coiffeur..."
+            placeholder: t(lang, "shop_form_type_placeholder")
           })
         )
       )
@@ -68,13 +75,12 @@ function ShopForm(props) {
     e(
       "label",
       { className: "classified-form-full" },
-      "Description",
+      t(lang, "shop_form_desc_label"),
       e("textarea", {
         rows: 3,
         value: localDescription,
         onChange: (ev) => setLocalDescription(ev.target.value),
-        placeholder:
-          "Horaires, services proposés, étage/bâtiment, infos pratiques..."
+        placeholder: t(lang, "shop_form_desc_placeholder")
       })
     ),
     e(
@@ -86,7 +92,7 @@ function ShopForm(props) {
         e(
           "label",
           null,
-          "Site web (optionnel)",
+          t(lang, "shop_form_url_label"),
           e("input", {
             type: "url",
             value: localUrl,
@@ -101,7 +107,7 @@ function ShopForm(props) {
         e(
           "label",
           null,
-          "Photo (URL optionnelle)",
+          t(lang, "shop_form_image_label"),
           e("input", {
             type: "url",
             value: localImageUrl,
@@ -118,7 +124,7 @@ function ShopForm(props) {
         disabled: creating,
         className: "classified-form-submit"
       },
-      creating ? "Enregistrement..." : "Ajouter le commerce"
+      creating ? t(lang, "form_saving") : t(lang, "shop_form_submit")
     )
   );
 }

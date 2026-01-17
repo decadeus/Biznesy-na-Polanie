@@ -1,7 +1,7 @@
 // Composant NeighborServicesSection : petits services entre voisins
 
 function NeighborServicesSection(props) {
-  const { services, servicesError, onOpenForm, lang: rawLang } = props;
+  const { services, servicesError, onOpenForm, onSelect, lang: rawLang } = props;
   const lang = rawLang || "fr";
   const t =
     window.i18n && window.i18n.t
@@ -31,12 +31,17 @@ function NeighborServicesSection(props) {
         const thumbUrl = s.imageUrl || defaultServiceThumb;
         return e(
           "article",
-          { key: s.id, className: "classified-item" },
+          {
+            key: s.id,
+            className: "classified-item",
+            onClick: () => onSelect && onSelect(s)
+          },
           e(CardAuthorHeader, {
             name: s.authorName,
             avatarUrl: s.authorAvatarUrl,
             role: s.authorRole,
-            createdAt: s.createdAt
+            createdAt: s.createdAt,
+            lang
           }),
           e(
             "div",

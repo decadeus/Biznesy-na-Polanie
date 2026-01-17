@@ -77,15 +77,100 @@ where status = 'pending';
 -- 5) Contenus publics (annonces, commerces, événements, signalements, services)
 -- Ces tables sont utilisées pour remplacer les données en mémoire de server.js.
 
+-- 5.0 Durées d'affichage possibles pour les posts
+create table if not exists public.post_durations (
+  id          bigint generated always as identity primary key,
+  label       text not null,
+  days        integer not null,
+  is_default  boolean default false
+);
+
+-- 5.0bis Informations de résidence
+create table if not exists public.residence (
+  id              bigint generated always as identity primary key,
+  name            text not null,
+  address         text,
+  description     text,
+  practical_info  jsonb,
+  image_url       text,
+  status          text default 'active',
+  created_at      timestamptz default now(),
+  last_updated_by text,
+  last_updated_at timestamptz default now()
+);
+
+alter table public.residence enable row level security;
+
+drop policy if exists "residence_select" on public.residence;
+drop policy if exists "residence_insert_admin" on public.residence;
+drop policy if exists "residence_update_admin" on public.residence;
+drop policy if exists "residence_delete_admin" on public.residence;
+
+create policy "residence_select"
+on public.residence
+for select
+using (
+  status = 'active'
+  or exists (
+    select 1 from public.residents r
+    where r.id = auth.uid()
+      and r.role in ('admin', 'super_admin')
+  )
+);
+
+create policy "residence_insert_admin"
+on public.residence
+for insert
+with check (
+  exists (
+    select 1 from public.residents r
+    where r.id = auth.uid()
+      and r.role in ('admin', 'super_admin')
+  )
+);
+
+create policy "residence_update_admin"
+on public.residence
+for update
+using (
+  exists (
+    select 1 from public.residents r
+    where r.id = auth.uid()
+      and r.role in ('admin', 'super_admin')
+  )
+)
+with check (
+  exists (
+    select 1 from public.residents r
+    where r.id = auth.uid()
+      and r.role in ('admin', 'super_admin')
+  )
+);
+
+create policy "residence_delete_admin"
+on public.residence
+for delete
+using (
+  exists (
+    select 1 from public.residents r
+    where r.id = auth.uid()
+      and r.role in ('admin', 'super_admin')
+  )
+);
+
 -- 5.1 Petites annonces (immobilier + objets entre voisins)
 create table if not exists public.classifieds (
   id          bigint generated always as identity primary key,
+  resident_id uuid references public.residents(id),
   type        text not null,             -- 'immobilier' | 'objet' ...
   title       text not null,
   description text not null,
   price       numeric,
   currency    text default 'PLN',
+  status      text default 'active',
   created_at  timestamptz default now(),
+  modified_at timestamptz,
+  duration_days integer default 7,
   image_url   text
 );
 
@@ -102,34 +187,56 @@ create table if not exists public.shops (
 -- 5.3 Événements de la résidence
 create table if not exists public.events (
   id          bigint generated always as identity primary key,
+  resident_id uuid references public.residents(id),
   title       text not null,
   date        date not null,
   time        text,             -- éventuellement à passer en type TIME
   location    text,
   description text,
   image_url   text,
-  created_at  timestamptz default now()
+  created_at  timestamptz default now(),
+  modified_at timestamptz,
+  duration_days integer default 7
 );
 
 -- 5.4 Signalements
 create table if not exists public.reports (
   id          bigint generated always as identity primary key,
+  resident_id uuid references public.residents(id),
   category    text not null,
   title       text not null,
   description text not null,
   status      text not null,
   created_at  timestamptz default now(),
-  image_url   text
+  image_url   text,
+  modified_at timestamptz,
+  duration_days integer default 7
 );
 
 -- 5.5 Petits services entre voisins
 create table if not exists public.neighbor_services (
   id          bigint generated always as identity primary key,
+  resident_id uuid references public.residents(id),
   kind        text not null,    -- 'offre' | 'demande'
   title       text not null,
   description text not null,
   created_at  timestamptz default now(),
-  image_url   text
+  image_url   text,
+  modified_at timestamptz,
+  duration_days integer default 7
+);
+
+-- 5.6 Sondages
+create table if not exists public.polls (
+  id          bigint generated always as identity primary key,
+  resident_id uuid references public.residents(id),
+  title       text not null,
+  description text,
+  options     jsonb not null,
+  end_date    date,
+  created_at  timestamptz default now(),
+  modified_at timestamptz,
+  duration_days integer default 7
 );
 
 -- 5.6 Feedback / contact (bugs, design, idées de fonctionnalités)

@@ -1,7 +1,7 @@
 // Composant EventsSection : agenda des événements de la résidence
 
 function EventsSection(props) {
-  const { events, eventsError, onOpenForm, lang: rawLang } = props;
+  const { events, eventsError, onOpenForm, onSelect, lang: rawLang } = props;
   const lang = rawLang || "fr";
   const t =
     window.i18n && window.i18n.t
@@ -30,13 +30,18 @@ function EventsSection(props) {
         const thumbUrl = ev.imageUrl || defaultEventThumb;
         return e(
           "article",
-          { key: ev.id, className: "classified-item" },
+          {
+            key: ev.id,
+            className: "classified-item",
+            onClick: () => onSelect && onSelect(ev)
+          },
           e(CardAuthorHeader, {
             name: ev.authorName,
             avatarUrl: ev.authorAvatarUrl,
             role: ev.authorRole,
             // Pour les événements, on affiche plutôt la date de l'événement
-            createdAt: ev.date || ev.createdAt
+            createdAt: ev.date || ev.createdAt,
+            lang
           }),
           e(
             "div",

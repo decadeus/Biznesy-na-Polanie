@@ -42,7 +42,8 @@ function ClassifiedsNeighbors(props) {
             name: item.authorName,
             avatarUrl: item.authorAvatarUrl,
             role: item.authorRole,
-            createdAt: item.createdAt
+            createdAt: item.createdAt,
+            lang
           }),
           e(
             "div",

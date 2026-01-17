@@ -2,7 +2,14 @@
 // (création / édition des fiches sera gérée plus tard via Supabase pour les comptes "commerçants")
 
 function ShopsSection(props) {
-  const { shops, shopsError, isMerchant, merchantShopId } = props;
+  const { shops, shopsError, isMerchant, merchantShopId, lang: rawLang } = props;
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
 
   return e(
     "section",
@@ -10,11 +17,11 @@ function ShopsSection(props) {
     e(
       "div",
       { className: "page-section-header" },
-      e("h2", null, "Commerçants dans la résidence"),
+      e("h2", null, t(lang, "shops_section_title")),
       e(
         "p",
         null,
-        "Magasin vegan, coiffeur et autres commerces situés dans ou au pied des immeubles."
+        t(lang, "shops_section_subtitle")
       )
     ),
     shopsError &&
@@ -81,10 +88,10 @@ function ShopsSection(props) {
                         className: "shop-edit-btn",
                         onClick: () =>
                           alert(
-                            "Simulation: ici le commerçant pourrait modifier sa fiche via Supabase."
+                          t(lang, "shops_section_edit_simulation")
                           )
                       },
-                      "Modifier ma fiche"
+                    t(lang, "shops_section_edit_button")
                     )
               )
             )
@@ -92,7 +99,7 @@ function ShopsSection(props) {
         : e(
             "div",
             { className: "empty", style: { color: "#4b5563" } },
-            "Les fiches commerçants seront gérées par les modérateurs."
+            t(lang, "shops_section_empty")
           )
     ),
     e(
@@ -101,7 +108,7 @@ function ShopsSection(props) {
         className: "page-section-text",
         style: { marginTop: "10px", fontSize: "12px", color: "#9ca3af" }
       },
-      "L’ajout et la modification des commerces seront réservés aux comptes commerçants/administration (via Supabase)."
+      t(lang, "shops_section_notice")
     )
   );
 }

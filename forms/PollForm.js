@@ -1,11 +1,45 @@
 // Formulaire pour créer un nouveau sondage
 
 function PollForm(props) {
-  const { creating, onSubmit } = props;
+  const { creating, onSubmit, initialValues, isEditing, lang: rawLang } = props;
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
   const [title, setTitle] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [endDate, setEndDate] = React.useState("");
-  const [options, setOptions] = React.useState(["Oui", "Non"]);
+  const [options, setOptions] = React.useState(() => [
+    t(lang, "poll_option_yes"),
+    t(lang, "poll_option_no")
+  ]);
+  const [durationDays, setDurationDays] = React.useState(7);
+
+  React.useEffect(() => {
+    if (!initialValues) return;
+    setTitle(initialValues.title || "");
+    setDescription(initialValues.description || "");
+    setEndDate(initialValues.endDate || "");
+    const initialOptions = Array.isArray(initialValues.options)
+      ? initialValues.options.map((opt) =>
+          typeof opt === "string" ? opt : opt && opt.label ? opt.label : ""
+        )
+      : [];
+    const fallbackOptions = [
+      t(lang, "poll_option_yes"),
+      t(lang, "poll_option_no")
+    ];
+    setOptions(initialOptions.length >= 2 ? initialOptions : fallbackOptions);
+    setDurationDays(
+      initialValues.durationDays ||
+        initialValues.duration_days ||
+        initialValues.duration ||
+        7
+    );
+  }, [initialValues && initialValues.id, lang]);
 
   function handleChangeOption(index, value) {
     setOptions((prev) => {
@@ -36,9 +70,7 @@ function PollForm(props) {
       .filter(Boolean);
 
     if (!title.trim() || !endDate.trim() || cleanOptions.length < 2) {
-      alert(
-        "Merci d’indiquer au moins un titre, une date de fin et 2 options non vides."
-      );
+      alert(t(lang, "poll_error_required_fields"));
       return;
     }
 
@@ -50,14 +82,16 @@ function PollForm(props) {
         options: cleanOptions.map((label, idx) => ({
           id: idx + 1,
           label
-        }))
+        })),
+        durationDays
       });
     }
 
     setTitle("");
     setDescription("");
     setEndDate("");
-    setOptions(["Oui", "Non"]);
+    setOptions([t(lang, "poll_option_yes"), t(lang, "poll_option_no")]);
+    setDurationDays(7);
   }
 
   return e(
@@ -69,24 +103,24 @@ function PollForm(props) {
       e(
         "div",
         { className: "classified-form-col" },
-        e("label", null, "Titre du sondage"),
+        e("label", null, t(lang, "poll_title_label")),
         e("input", {
           type: "text",
           value: title,
           onChange: (e) => setTitle(e.target.value),
-          placeholder: "Ex : Faut-il organiser un nettoyage de printemps ?"
+          placeholder: t(lang, "poll_title_placeholder")
         })
       )
     ),
     e(
       "div",
       { className: "classified-form-full" },
-      e("label", null, "Description courte (optionnelle)"),
+      e("label", null, t(lang, "poll_desc_label")),
       e("textarea", {
         rows: 2,
         value: description,
         onChange: (e) => setDescription(e.target.value),
-        placeholder: "Quelques mots de contexte pour les voisins…"
+        placeholder: t(lang, "poll_desc_placeholder")
       })
     ),
     e(
@@ -95,7 +129,7 @@ function PollForm(props) {
       e(
         "div",
         { className: "classified-form-col" },
-        e("label", null, "Fin du sondage"),
+        e("label", null, t(lang, "poll_end_label")),
         e("input", {
           type: "date",
           value: endDate,
@@ -106,7 +140,7 @@ function PollForm(props) {
     e(
       "div",
       { className: "classified-form-full" },
-      e("label", null, "Options de vote (2 à 5)"),
+      e("label", null, t(lang, "poll_options_label")),
       e(
         "div",
         { className: "classified-form-options" },
@@ -118,7 +152,12 @@ function PollForm(props) {
               type: "text",
               value: opt,
               onChange: (e) => handleChangeOption(idx, e.target.value),
-              placeholder: idx === 0 ? "Oui" : idx === 1 ? "Non" : "Autre option"
+              placeholder:
+                idx === 0
+                  ? t(lang, "poll_option_yes")
+                  : idx === 1
+                  ? t(lang, "poll_option_no")
+                  : t(lang, "poll_option_other")
             }),
             options.length > 2 &&
               e(
@@ -140,8 +179,29 @@ function PollForm(props) {
               onClick: handleAddOption,
               className: "btn-secondary"
             },
-            "Ajouter une option"
+            t(lang, "poll_add_option")
           )
+      )
+    ),
+    e(
+      "div",
+      { className: "classified-form-row" },
+      e(
+        "div",
+        { className: "classified-form-col" },
+        e("label", null, t(lang, "form_duration_label")),
+        e(
+          "select",
+          {
+            value: durationDays,
+            onChange: (e) => setDurationDays(Number(e.target.value))
+          },
+          e("option", { value: 3 }, t(lang, "form_duration_3d")),
+          e("option", { value: 7 }, t(lang, "form_duration_1w")),
+          e("option", { value: 14 }, t(lang, "form_duration_2w")),
+          e("option", { value: 21 }, t(lang, "form_duration_3w")),
+          e("option", { value: 30 }, t(lang, "form_duration_1m"))
+        )
       )
     ),
     e(
@@ -154,7 +214,11 @@ function PollForm(props) {
           disabled: creating,
           className: "btn-primary"
         },
-        creating ? "Enregistrement..." : "Créer le sondage"
+        creating
+          ? t(lang, "form_saving")
+          : isEditing
+          ? t(lang, "poll_submit_update")
+          : t(lang, "poll_submit_create")
       )
     )
   );

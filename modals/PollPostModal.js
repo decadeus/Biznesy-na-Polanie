@@ -1,8 +1,8 @@
-// Modal pour afficher le détail d'un commerce
+// Modal pour afficher le détail d'un sondage
 
-function ShopModal(props) {
-  const { open, shop, onClose, lang: rawLang } = props;
-  if (!open || !shop) return null;
+function PollPostModal(props) {
+  const { open, item, onClose, lang: rawLang } = props;
+  if (!open || !item) return null;
   const lang = rawLang || "fr";
   const t =
     window.i18n && window.i18n.t
@@ -10,6 +10,20 @@ function ShopModal(props) {
       : function (_lang, key) {
           return key;
         };
+
+  function formatDate(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (!date || Number.isNaN(date.getTime())) return "";
+    const locale = lang === "pl" ? "pl-PL" : lang === "en" ? "en-GB" : "fr-FR";
+    return date.toLocaleDateString(locale, {
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
+    });
+  }
+
+  const endDateText = formatDate(item.endDate);
 
   return e(
     "div",
@@ -29,7 +43,7 @@ function ShopModal(props) {
             e(
               "div",
               { className: "line-badge" },
-              e("span", null, t(lang, "shop_modal_title"))
+              e("span", null, t(lang, "poll_post_modal_title"))
             ),
             e(
               "button",
@@ -51,40 +65,28 @@ function ShopModal(props) {
             )
           ),
           e("div", { className: "divider" }),
-          shop.imageUrl &&
-            e("div", {
-              className: "announcement-modal-image",
-              style: { backgroundImage: "url(" + shop.imageUrl + ")" }
-            }),
           e(
             "div",
             { className: "announcement-modal-body" },
-            e(
-              "h3",
-              { className: "announcement-title" },
-              shop.name
-            ),
-            e(
-              "p",
-              { className: "announcement-meta" },
-              shop.type || ""
-            ),
-            e(
-              "p",
-              { className: "announcement-text" },
-              shop.description || ""
-            ),
-            shop.url &&
+            e("h3", { className: "announcement-title" }, item.title || ""),
+            endDateText &&
               e(
-                "a",
-                {
-                  className: "shops-quick-link",
-                  href: shop.url,
-                  target: "_blank",
-                  rel: "noreferrer",
-                  style: { marginTop: "8px", display: "inline-block" }
-                },
-                t(lang, "shop_modal_open_site")
+                "p",
+                { className: "announcement-meta" },
+                t(lang, "polls_end_prefix"),
+                endDateText
+              ),
+            item.description &&
+              e("p", { className: "announcement-text" }, item.description),
+            Array.isArray(item.options) &&
+              item.options.length > 0 &&
+              e(
+                "div",
+                { className: "announcement-text" },
+                item.options
+                  .map((opt) => (opt && opt.label ? opt.label : ""))
+                  .filter(Boolean)
+                  .join(" • ")
               )
           )
         )
@@ -92,4 +94,3 @@ function ShopModal(props) {
     )
   );
 }
-

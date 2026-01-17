@@ -1,6 +1,14 @@
 // AdminPendingUsers : interface modérateurs pour valider / refuser les nouveaux comptes
 
 function AdminPendingUsers(props) {
+  const lang = (props && props.lang) || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
+  const locale = lang === "pl" ? "pl-PL" : lang === "en" ? "en-GB" : "fr-FR";
   const defaultAvatar =
     "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=200";
   const [items, setItems] = React.useState([]);
@@ -19,7 +27,7 @@ function AdminPendingUsers(props) {
       if (!res.ok) {
         const msg =
           (data && data.error) ||
-          "Impossible de charger les comptes en attente.";
+          t(lang, "admin_pending_error_load");
         throw new Error(msg);
       }
       const list = Array.isArray(data.items) ? data.items : [];
@@ -32,7 +40,7 @@ function AdminPendingUsers(props) {
       setError(
         err && err.message
           ? err.message
-          : "Erreur lors du chargement des comptes en attente."
+          : t(lang, "admin_pending_error_load_generic")
       );
     } finally {
       setLoading(false);
@@ -58,7 +66,7 @@ function AdminPendingUsers(props) {
           }
         })
       ),
-      e("td", null, u.name || "Utilisateur à valider"),
+      e("td", null, u.name || t(lang, "admin_pending_user_fallback")),
       e(
         "td",
         null,
@@ -77,14 +85,14 @@ function AdminPendingUsers(props) {
                   )
               : undefined
           },
-          "Voir le compte FB"
+          t(lang, "admin_pending_view_fb")
         )
       ),
       e(
         "td",
         null,
         u.createdAt
-          ? new Date(u.createdAt).toLocaleDateString("fr-FR", {
+          ? new Date(u.createdAt).toLocaleDateString(locale, {
               day: "2-digit",
               month: "2-digit",
               year: "numeric"
@@ -104,7 +112,7 @@ function AdminPendingUsers(props) {
               className: "btn-secondary-light",
               onClick: () => actOnUser(u.id, "reject")
             },
-            "Refuser"
+            t(lang, "admin_pending_reject")
           ),
           e(
             "button",
@@ -113,7 +121,7 @@ function AdminPendingUsers(props) {
               className: "btn-secondary",
               onClick: () => actOnUser(u.id, "approve")
             },
-            "Accepter"
+            t(lang, "admin_pending_accept")
           )
         )
       )
@@ -130,7 +138,7 @@ function AdminPendingUsers(props) {
       if (!res.ok) {
         const msg =
           (data && data.error) ||
-          "Impossible de mettre à jour ce compte pour le moment.";
+          t(lang, "admin_pending_error_update");
         throw new Error(msg);
       }
       setItems((prev) => {
@@ -145,7 +153,7 @@ function AdminPendingUsers(props) {
       setError(
         err && err.message
           ? err.message
-          : "Erreur lors de la mise à jour de ce compte."
+          : t(lang, "admin_pending_error_update_generic")
       );
     }
   }
@@ -165,7 +173,7 @@ function AdminPendingUsers(props) {
           e(
             "div",
             { className: "line-badge" },
-            e("span", null, "Validation des nouveaux comptes")
+            e("span", null, t(lang, "admin_pending_title"))
           )
         ),
         e(
@@ -175,7 +183,7 @@ function AdminPendingUsers(props) {
             e(
               "p",
               { className: "admin-pending-loading" },
-              "Chargement des demandes en cours..."
+              t(lang, "admin_pending_loading")
             ),
           error &&
             e(
@@ -189,7 +197,7 @@ function AdminPendingUsers(props) {
             e(
               "p",
               { className: "admin-pending-empty" },
-              "Aucune demande en attente pour le moment."
+              t(lang, "admin_pending_empty")
             ),
           !loading &&
             items &&
@@ -201,9 +209,10 @@ function AdminPendingUsers(props) {
                   e(
                     "h3",
                     { className: "member-section-title" },
-                    "Demandes en attente (",
-                    items.length,
-                    ")"
+                    t(lang, "admin_pending_count").replace(
+                      "{n}",
+                      String(items.length)
+                    )
                   ),
                   e(
                     "div",
@@ -228,14 +237,14 @@ function AdminPendingUsers(props) {
                             e(
                               "div",
                               { className: "member-card-name" },
-                              u.name || "Utilisateur à valider"
+                              u.name || t(lang, "admin_pending_user_fallback")
                             ),
                             e(
                               "div",
                               { className: "member-card-date" },
                               u.createdAt
                                 ? new Date(u.createdAt).toLocaleDateString(
-                                    "fr-FR",
+                                    locale,
                                     {
                                       day: "2-digit",
                                       month: "2-digit",
@@ -265,7 +274,7 @@ function AdminPendingUsers(props) {
                                     )
                                 : undefined
                             },
-                            "Voir le compte FB"
+                            t(lang, "admin_pending_view_fb")
                           )
                         ),
                         e(
@@ -278,7 +287,7 @@ function AdminPendingUsers(props) {
                               className: "btn-secondary-light",
                               onClick: () => actOnUser(u.id, "reject")
                             },
-                            "Refuser"
+                            t(lang, "admin_pending_reject")
                           ),
                           e(
                             "button",
@@ -287,7 +296,7 @@ function AdminPendingUsers(props) {
                               className: "btn-secondary",
                               onClick: () => actOnUser(u.id, "approve")
                             },
-                            "Accepter"
+                            t(lang, "admin_pending_accept")
                           )
                         )
                       )
@@ -300,9 +309,10 @@ function AdminPendingUsers(props) {
                   e(
                     "h3",
                     { className: "member-section-title" },
-                    "Demandes en attente (",
-                    items.length,
-                    ")"
+                    t(lang, "admin_pending_count").replace(
+                      "{n}",
+                      String(items.length)
+                    )
                   ),
                   e(
                     "table",
@@ -313,11 +323,11 @@ function AdminPendingUsers(props) {
                       e(
                         "tr",
                         null,
-                        e("th", null, "Avatar"),
-                        e("th", null, "Nom"),
-                        e("th", null, "Profil Facebook"),
-                        e("th", null, "Date"),
-                        e("th", null, "Actions")
+                        e("th", null, t(lang, "admin_pending_table_avatar")),
+                        e("th", null, t(lang, "admin_pending_table_name")),
+                        e("th", null, t(lang, "admin_pending_table_fb")),
+                        e("th", null, t(lang, "admin_pending_table_date")),
+                        e("th", null, t(lang, "admin_pending_table_actions"))
                       )
                     ),
                     e("tbody", null, items.map((u) => renderRow(u)))

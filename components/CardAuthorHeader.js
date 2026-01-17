@@ -3,15 +3,23 @@
 function CardAuthorHeader(props) {
   const defaultAvatar =
     "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=200";
+  const lang = props.lang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
+  const locale = lang === "pl" ? "pl-PL" : lang === "en" ? "en-GB" : "fr-FR";
 
-  const name = props.name || "Résident de Mały Kack";
+  const name = props.name || t(lang, "profile_default_name");
   const avatarUrl = props.avatarUrl || defaultAvatar;
   const role = props.role || "resident"; // resident, admin, super_admin, moderator
 
   let dateLabel = null;
   if (props.createdAt) {
     try {
-      dateLabel = new Date(props.createdAt).toLocaleDateString("fr-FR", {
+      dateLabel = new Date(props.createdAt).toLocaleDateString(locale, {
         day: "2-digit",
         month: "2-digit",
         year: "numeric"
@@ -36,7 +44,7 @@ function CardAuthorHeader(props) {
         e(
           "div",
           { className: "card-author-date" },
-          "Publié le " + dateLabel
+          t(lang, "post_published_on").replace("{date}", dateLabel)
         )
     )
   );

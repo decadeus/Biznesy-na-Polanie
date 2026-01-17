@@ -139,10 +139,7 @@ function WeatherCard(props) {
         : e(
             "div",
             { className: "empty" },
-            weatherError ||
-              (window.i18n && window.i18n.t
-                ? window.i18n.t(lang, "weather_loading")
-                : "Chargement de la météo...")
+            weatherError || t(lang, "weather_loading")
           )
     )
   );

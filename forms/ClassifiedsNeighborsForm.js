@@ -1,6 +1,13 @@
 // Formulaire pour une annonce "entre voisins" (objet / service)
 
 function ClassifiedsNeighborsForm(props) {
+  const lang = props.lang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
   // S'assure que le type par défaut est "objet" si rien n'est défini
   if (!props.formType || props.formType === "immobilier") {
     props.onChangeField("type", "objet");
@@ -21,13 +28,13 @@ function ClassifiedsNeighborsForm(props) {
         e(
           "label",
           null,
-          "Titre de l'annonce",
+          t(lang, "classifieds_title_label"),
           e("input", {
             type: "text",
             value: props.formTitle,
             onChange: (ev) =>
               props.onChangeField("title", ev.target.value),
-            placeholder: "Ex: Vélo de ville à vendre"
+            placeholder: t(lang, "classifieds_title_placeholder_neighbor")
           })
         )
       ),
@@ -37,13 +44,13 @@ function ClassifiedsNeighborsForm(props) {
         e(
           "label",
           null,
-          "Prix (optionnel, PLN)",
+          t(lang, "classifieds_price_label_optional"),
           e("input", {
             type: "number",
             value: props.formPrice,
             onChange: (ev) =>
               props.onChangeField("price", ev.target.value),
-            placeholder: "Ex: 600"
+            placeholder: t(lang, "classifieds_price_placeholder")
           })
         )
       )
@@ -51,15 +58,67 @@ function ClassifiedsNeighborsForm(props) {
     e(
       "label",
       { className: "classified-form-full" },
-      "Description",
+      t(lang, "classifieds_desc_label"),
       e("textarea", {
         rows: 4,
         value: props.formDescription,
         onChange: (ev) =>
           props.onChangeField("description", ev.target.value),
-        placeholder:
-          "Détaille l'objet, l'état, la disponibilité ou le service proposé..."
+        placeholder: t(lang, "classifieds_desc_placeholder_neighbor")
       })
+    ),
+    e(
+      "div",
+      { className: "classified-form-row" },
+      e(
+        "div",
+        { className: "classified-form-col" },
+        e(
+          "label",
+          null,
+          t(lang, "form_image_label"),
+          e("input", {
+            type: "file",
+            accept: "image/*",
+            onChange: (ev) =>
+              props.onChangeField(
+                "imageFile",
+                ev && ev.target && ev.target.files
+                  ? ev.target.files[0]
+                  : null
+              )
+          })
+        )
+      )
+    ),
+    e(
+      "div",
+      { className: "classified-form-row" },
+      e(
+        "div",
+        { className: "classified-form-col" },
+        e(
+          "label",
+          null,
+          t(lang, "form_duration_label"),
+          e(
+            "select",
+            {
+              value: props.formDurationDays || 7,
+              onChange: (ev) =>
+                props.onChangeField(
+                  "durationDays",
+                  Number(ev.target.value)
+                )
+            },
+            e("option", { value: 3 }, t(lang, "form_duration_3d")),
+            e("option", { value: 7 }, t(lang, "form_duration_1w")),
+            e("option", { value: 14 }, t(lang, "form_duration_2w")),
+            e("option", { value: 21 }, t(lang, "form_duration_3w")),
+            e("option", { value: 30 }, t(lang, "form_duration_1m"))
+          )
+        )
+      )
     ),
     props.classifiedsError &&
       e(
@@ -74,7 +133,11 @@ function ClassifiedsNeighborsForm(props) {
         disabled: props.creating,
         className: "classified-form-submit"
       },
-      props.creating ? "Enregistrement..." : "Publier l'annonce"
+      props.creating
+        ? t(lang, "form_saving")
+        : props.isEditing
+        ? t(lang, "classifieds_submit_update")
+        : t(lang, "classifieds_submit_publish")
     )
   );
 }

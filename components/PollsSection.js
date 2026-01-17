@@ -1,7 +1,14 @@
 // Composant PollsSection : sondages pour les résidents
 
 function PollsSection(props) {
-  const { polls, pollsError, onOpenForm, onVote } = props;
+  const { polls, pollsError, onOpenForm, onVote, onSelect, lang: rawLang } = props;
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
   const items = Array.isArray(polls) ? polls : [];
 
   function computePercent(option, total) {
@@ -15,7 +22,7 @@ function PollsSection(props) {
       return e(
         "div",
         { className: "empty" },
-        "Aucun sondage en cours pour le moment."
+        t(lang, "polls_section_empty")
       );
     }
 
@@ -32,7 +39,11 @@ function PollsSection(props) {
 
         return e(
           "article",
-          { key: poll.id, className: "classified-item" },
+          {
+            key: poll.id,
+            className: "classified-item",
+            onClick: () => onSelect && onSelect(poll)
+          },
           e(
             "div",
             { className: "classified-body" },
@@ -43,7 +54,9 @@ function PollsSection(props) {
               e(
                 "span",
                 { className: "classified-tag" },
-                isClosed ? "Terminé" : "En cours"
+                isClosed
+                  ? t(lang, "polls_status_closed")
+                  : t(lang, "polls_status_open")
               )
             ),
             poll.description &&
@@ -83,7 +96,7 @@ function PollsSection(props) {
               e(
                 "p",
                 { className: "poll-end-date" },
-                "Fin le ",
+                t(lang, "polls_end_prefix"),
                 poll.endDate
               )
           )
@@ -98,11 +111,11 @@ function PollsSection(props) {
     e(
       "div",
       { className: "page-section-header" },
-      e("h2", null, "Sondages entre voisins"),
+      e("h2", null, t(lang, "polls_section_title")),
       e(
         "p",
         null,
-        "Donner votre avis sur la vie de la résidence."
+        t(lang, "polls_section_subtitle")
       ),
       e(
         "button",
@@ -111,7 +124,7 @@ function PollsSection(props) {
           onClick: onOpenForm,
           className: "page-section-cta"
         },
-        "Créer un sondage"
+        t(lang, "polls_section_cta")
       )
     ),
     pollsError &&

@@ -1,8 +1,8 @@
-// Modal pour afficher le détail d'un commerce
+// Modal pour afficher le détail d'un petit service
 
-function ShopModal(props) {
-  const { open, shop, onClose, lang: rawLang } = props;
-  if (!open || !shop) return null;
+function ServicePostModal(props) {
+  const { open, item, onClose, lang: rawLang } = props;
+  if (!open || !item) return null;
   const lang = rawLang || "fr";
   const t =
     window.i18n && window.i18n.t
@@ -10,6 +10,24 @@ function ShopModal(props) {
       : function (_lang, key) {
           return key;
         };
+
+  function formatDate(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (!date || Number.isNaN(date.getTime())) return "";
+    const locale = lang === "pl" ? "pl-PL" : lang === "en" ? "en-GB" : "fr-FR";
+    return date.toLocaleDateString(locale, {
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
+    });
+  }
+
+  const dateText = formatDate(item.createdAt);
+  const kindLabel =
+    item.kind === "demande"
+      ? t(lang, "services_tag_request")
+      : t(lang, "services_tag_offer");
 
   return e(
     "div",
@@ -29,7 +47,7 @@ function ShopModal(props) {
             e(
               "div",
               { className: "line-badge" },
-              e("span", null, t(lang, "shop_modal_title"))
+              e("span", null, t(lang, "service_modal_title"))
             ),
             e(
               "button",
@@ -51,45 +69,29 @@ function ShopModal(props) {
             )
           ),
           e("div", { className: "divider" }),
-          shop.imageUrl &&
+          item.imageUrl &&
             e("div", {
               className: "announcement-modal-image",
-              style: { backgroundImage: "url(" + shop.imageUrl + ")" }
+              style: { backgroundImage: "url(" + item.imageUrl + ")" }
             }),
           e(
             "div",
             { className: "announcement-modal-body" },
-            e(
-              "h3",
-              { className: "announcement-title" },
-              shop.name
-            ),
+            e("h3", { className: "announcement-title" }, item.title || ""),
             e(
               "p",
               { className: "announcement-meta" },
-              shop.type || ""
+              kindLabel,
+              dateText
+                ? " • " +
+                    t(lang, "post_published_on").replace("{date}", dateText)
+                : ""
             ),
-            e(
-              "p",
-              { className: "announcement-text" },
-              shop.description || ""
-            ),
-            shop.url &&
-              e(
-                "a",
-                {
-                  className: "shops-quick-link",
-                  href: shop.url,
-                  target: "_blank",
-                  rel: "noreferrer",
-                  style: { marginTop: "8px", display: "inline-block" }
-                },
-                t(lang, "shop_modal_open_site")
-              )
+            item.description &&
+              e("p", { className: "announcement-text" }, item.description)
           )
         )
       )
     )
   );
 }
-

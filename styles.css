@@ -407,6 +407,18 @@ body {
   white-space: nowrap;
 }
 
+.btn-danger-outline {
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1px solid #fca5a5;
+  background: #fff1f2;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
 .form-error {
   margin-top: 8px;
   font-size: 13px;
@@ -882,58 +894,6 @@ body {
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-}
-
-.moderators-card {
-  padding-top: 14px;
-  padding-bottom: 10px;
-}
-
-.moderators-list {
-  margin-top: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.moderator-pill {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  padding: 6px 8px;
-  border-radius: 12px;
-  background: rgba(249, 250, 251, 0.95);
-  border: 1px solid rgba(209, 213, 219, 0.9);
-}
-
-.moderator-main {
-  flex: 1;
-}
-
-.moderator-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.moderator-email {
-  font-size: 11px;
-  color: #6b7280;
-}
-
-.moderator-remove {
-  border: none;
-  background: transparent;
-  color: #9ca3af;
-  font-size: 14px;
-  cursor: pointer;
-  padding: 0 4px;
-}
-
-.moderators-actions {
-  margin-top: 8px;
-  display: flex;
-  justify-content: flex-end;
 }
 
 .btn-secondary-light {
@@ -1845,6 +1805,62 @@ body {
   color: #b91c1c;
 }
 
+.my-posts {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.my-posts-list {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.my-posts-grid {
+  max-height: none;
+  overflow: visible;
+}
+
+.my-posts-card {
+  cursor: default;
+}
+
+.my-posts-item {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.my-posts-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.my-posts-meta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.my-posts-remaining {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #374151;
+}
+
+.my-posts-actions {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .app-download {
   margin-top: 12px;
   padding: 12px 14px;
@@ -1917,12 +1933,13 @@ body {
 }
 
 .classified-form-col input,
+.classified-form-col select,
 .classified-form-full textarea {
   padding: 5px 8px;
   border-radius: 10px;
   border: 1px solid rgba(229, 233, 238, 0.6);
   background: rgba(229, 232, 238, 0.9);
-  color: #0000;
+  color: #111827;
   font-size: 12px;
 }
 
@@ -2608,7 +2625,7 @@ body {
 
 .announcement-modal-body {
   font-size: 14px;
-  color: #f9fafb;
+  color: #0f172a;
 }
 
 .announcement-title {
@@ -2619,13 +2636,13 @@ body {
 
 .announcement-meta {
   font-size: 12px;
-  color: #cbd5f5;
+  color: #475569;
   margin-bottom: 8px;
 }
 
 .announcement-text {
   font-size: 13px;
-  color: #e5e7eb;
+  color: #1f2937;
   line-height: 1.5;
 }
 

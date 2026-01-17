@@ -101,12 +101,7 @@ function SectionsQuickNav(props) {
     return e("option", { value: id }, label);
   }
 
-  const placeholder =
-    lang === "pl"
-      ? "Przejdź do sekcji…"
-      : lang === "en"
-      ? "Go to a section…"
-      : "Aller vers une section…";
+  const placeholder = t(lang, "sections_nav_placeholder");
 
   const navClassName =
     "sections-nav" + (floating ? " sections-nav-floating" : "");
@@ -151,147 +146,17 @@ function SectionsQuickNav(props) {
   );
 }
 
-// Composant temporaire pour créer des utilisateurs Supabase (email / mot de passe)
-function TempUserCreator(props) {
-  const supabase = window.supabaseClient || null;
-  const lang = props.lang || "fr";
-
-  const [email, setEmail] = React.useState("");
-  const [password, setPassword] = React.useState("");
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState(null);
-  const [info, setInfo] = React.useState(null);
-
-  if (!supabase) return null;
-
-  async function handleSubmit(ev) {
-    ev.preventDefault();
-    if (!email || !password) {
-      setError("Merci de saisir un email et un mot de passe.");
-      setInfo(null);
-      return;
-    }
-    try {
-      setLoading(true);
-      setError(null);
-      setInfo(null);
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password
-      });
-      if (signUpError) throw signUpError;
-      setInfo(
-        data && data.user
-          ? "Utilisateur créé avec succès dans Supabase."
-          : "Requête envoyée. Vérifiez dans l'onglet Auth de Supabase."
-      );
-      setEmail("");
-      setPassword("");
-    } catch (e) {
-      console.error("TempUserCreator signUp error:", e);
-      setError(e && e.message ? e.message : "Erreur lors de la création.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const title =
-    lang === "pl"
-      ? "Dodaj użytkownika (demo)"
-      : lang === "en"
-      ? "Add user (demo)"
-      : "Ajouter un utilisateur (démo)";
-
-  return e(
-    "div",
-    { className: "card card-wrapper" },
-    e(
-      "div",
-      { className: "card-content" },
-      e(
-        "div",
-        { className: "header" },
-        e(
-          "div",
-          { className: "line-badge" },
-          e("span", null, title)
-        )
-      ),
-      e(
-        "form",
-        { className: "classified-form", onSubmit: handleSubmit },
-        e(
-          "div",
-          { className: "classified-form-row" },
-          e(
-            "div",
-            { className: "classified-form-col" },
-            e(
-              "label",
-              null,
-              "Email",
-              e("input", {
-                type: "email",
-                value: email,
-                onChange: function (ev) {
-                  setEmail(ev.target.value);
-                },
-                required: true
-              })
-            )
-          ),
-          e(
-            "div",
-            { className: "classified-form-col" },
-            e(
-              "label",
-              null,
-              "Mot de passe",
-              e("input", {
-                type: "password",
-                value: password,
-                onChange: function (ev) {
-                  setPassword(ev.target.value);
-                },
-                required: true
-              })
-            )
-          )
-        ),
-        e(
-          "div",
-          { className: "classified-form-submit" },
-          e(
-            "button",
-            {
-              type: "submit",
-              className: "btn-primary",
-              disabled: loading
-            },
-            loading ? "Création..." : "Créer l'utilisateur"
-          )
-        ),
-        error &&
-          e(
-            "div",
-            { className: "form-error" },
-            error
-          ),
-        info &&
-          e(
-            "div",
-            { className: "form-success" },
-            info
-          )
-      )
-    )
-  );
-}
-
 // Menu principal pour basculer entre les pages (accueil / à propos / communication)
 function MainMenu(props) {
   const current = props.current || "home";
   const onChange = props.onChange || function () {};
+  const lang = props.lang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
 
   function btn(key, label) {
     const active = current === key;
@@ -312,9 +177,10 @@ function MainMenu(props) {
   return e(
     "div",
     { className: "main-menu" },
-    btn("home", "Accueil"),
-    btn("about", "Infos sur le site"),
-    btn("feedback", "Contact / idées")
+    btn("home", t(lang, "menu_home")),
+    btn("myPosts", t(lang, "menu_my_posts")),
+    btn("about", t(lang, "menu_about")),
+    btn("feedback", t(lang, "menu_feedback"))
   );
 }
 
@@ -333,7 +199,20 @@ function App() {
   const [weather, setWeather] = useState(null);
   const [weatherError, setWeatherError] = useState(null);
   const [residence, setResidence] = useState(null);
+  const [residenceItems, setResidenceItems] = useState([]);
   const [residenceError, setResidenceError] = useState(null);
+  const [savingResidence, setSavingResidence] = useState(false);
+  const [showResidenceForm, setShowResidenceForm] = useState(false);
+  const [selectedResidencePost, setSelectedResidencePost] = useState(null);
+  const [showResidencePostModal, setShowResidencePostModal] = useState(false);
+  const [selectedServicePost, setSelectedServicePost] = useState(null);
+  const [showServicePostModal, setShowServicePostModal] = useState(false);
+  const [selectedReportPost, setSelectedReportPost] = useState(null);
+  const [showReportPostModal, setShowReportPostModal] = useState(false);
+  const [selectedEventPost, setSelectedEventPost] = useState(null);
+  const [showEventPostModal, setShowEventPostModal] = useState(false);
+  const [selectedPollPost, setSelectedPollPost] = useState(null);
+  const [showPollPostModal, setShowPollPostModal] = useState(false);
   const [classifieds, setClassifieds] = useState([]);
   const [classifiedsError, setClassifiedsError] = useState(null);
   const [shops, setShops] = useState([]);
@@ -352,13 +231,25 @@ function App() {
   const [formTitle, setFormTitle] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formPrice, setFormPrice] = useState("");
+  const [formDurationDays, setFormDurationDays] = useState(7);
+  const [formImageFile, setFormImageFile] = useState(null);
   const [showClassifiedsModal, setShowClassifiedsModal] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
   const [showEventModal, setShowEventModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showServiceModal, setShowServiceModal] = useState(false);
-  const [profileName, setProfileName] = useState("Résident de Mały Kack");
+  const [profileName, setProfileName] = useState(() => {
+    try {
+      const storedLang = window.localStorage
+        ? window.localStorage.getItem("appLang")
+        : null;
+      if (window.i18n && window.i18n.t) {
+        return window.i18n.t(storedLang || "pl", "profile_default_name");
+      }
+    } catch (e) {}
+    return "";
+  });
   const [profileAvatar, setProfileAvatar] = useState(
     "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=200"
   );
@@ -373,8 +264,6 @@ function App() {
   const [adminView, setAdminView] = useState("members"); // "members", "pendingUsers", "stats"
   const [selectedShop, setSelectedShop] = useState(null);
   const [showShopModal, setShowShopModal] = useState(false);
-  const [moderators, setModerators] = useState([]);
-  const [moderatorsError, setModeratorsError] = useState(null);
   const [members, setMembers] = useState([]);
   const [membersError, setMembersError] = useState(null);
   const [membersLoading, setMembersLoading] = useState(false);
@@ -386,6 +275,7 @@ function App() {
   const [pendingProfileUrl, setPendingProfileUrl] = useState("");
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [showAdminNav, setShowAdminNav] = useState(false);
+  const [editingPost, setEditingPost] = useState(null);
   const [lang, setLang] = useState(() => {
     try {
       if (window.localStorage) {
@@ -396,6 +286,12 @@ function App() {
     // Par défaut, on démarre le site en polonais pour les résidents
     return "pl";
   });
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
   const [mainPage, setMainPage] = useState("home"); // "home" | "about" | "feedback"
   const isDevEnv =
     typeof window !== "undefined" &&
@@ -408,7 +304,7 @@ function App() {
         setAuthError(null);
         const res = await fetch("/api/me");
         if (!res.ok) {
-          throw new Error("Impossible de vérifier votre session.");
+          throw new Error(t(lang, "auth_error_session"));
         }
         const data = await res.json();
         if (data && data.authenticated && data.user) {
@@ -418,7 +314,7 @@ function App() {
         }
       } catch (e) {
         console.error(e);
-        setAuthError("Impossible de vérifier votre session.");
+        setAuthError(t(lang, "auth_error_session"));
       } finally {
         setAuthChecked(true);
       }
@@ -493,7 +389,7 @@ function App() {
         setError(null);
         const res = await fetch("/api/departures?line=" + selectedLine);
         if (!res.ok) {
-          throw new Error("Réponse non valide du serveur");
+          throw new Error(t(lang, "error_invalid_server_response"));
         }
         const data = await res.json();
         setDepartures(Array.isArray(data.departures) ? data.departures : []);
@@ -501,7 +397,7 @@ function App() {
         setHasLoadedOnce(true);
       } catch (e) {
         console.error(e);
-        setError("Impossible de récupérer les horaires en ligne.");
+        setError(t(lang, "error_bus_fetch"));
       } finally {
         if (!hasLoadedOnce) {
           setLoading(false);
@@ -524,7 +420,7 @@ function App() {
         setWeather(data);
       } catch (e) {
         console.error(e);
-        setWeatherError("Météo indisponible.");
+        setWeatherError(t(lang, "error_weather_unavailable"));
       }
     }
     loadWeather();
@@ -551,10 +447,11 @@ function App() {
 
   useEffect(() => {
     if (!currentUser) return;
+    const defaultName = t(lang, "profile_default_name");
     setProfileName((prev) =>
-      prev && prev !== "Résident de Mały Kack"
+      prev && prev !== defaultName
         ? prev
-        : currentUser.name || "Résident de Mały Kack"
+        : currentUser.name || defaultName
     );
     // Toujours privilégier la vraie photo de profil renvoyée par le backend
     // (Supabase / Facebook). Si elle n'existe pas, on garde un fallback.
@@ -562,38 +459,81 @@ function App() {
       currentUser.avatarUrl ||
         "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=200"
     );
-  }, [currentUser]);
+  }, [currentUser, lang]);
 
-  useEffect(() => {
-    async function loadResidence() {
-      try {
-        setResidenceError(null);
-        const res = await fetch("/api/residence");
-        if (!res.ok) {
-          throw new Error("Impossible de charger les infos résidence");
-        }
-        const data = await res.json();
-        setResidence(data);
-      } catch (e) {
-        console.error(e);
-        setResidenceError("Infos résidence indisponibles pour le moment.");
-      }
-    }
+  function mapClassifiedRow(row) {
+    return Object.assign({}, row, {
+      imageUrl: row.image_url || row.imageUrl || null,
+      authorId: row.resident_id || row.residentId || row.authorId || null,
+      durationDays: row.duration_days || row.durationDays || 7,
+      modifiedAt: row.modified_at || row.modifiedAt || null,
+      status: row.status || row.status_id || "active",
+      authorName:
+        row.resident && row.resident.display_name
+          ? row.resident.display_name
+          : row.authorName || null,
+      authorAvatarUrl:
+        row.resident && row.resident.avatar_url
+          ? row.resident.avatar_url
+          : row.authorAvatarUrl || null,
+      authorRole:
+        row.resident && row.resident.role
+          ? row.resident.role
+          : row.authorRole || null,
+      createdAt: row.created_at || row.createdAt || null
+    });
+  }
 
-    async function loadClassifieds() {
-      try {
-        setClassifiedsError(null);
-        if (supabase) {
-          const { data, error } = await supabase
-            .from("classifieds")
-            .select(
-              "*, resident:resident_id(display_name, avatar_url, role)"
-            );
-          if (error) throw error;
-          const items = Array.isArray(data)
-            ? data.map(function (row) {
+  function mapEventRow(row) {
+    return Object.assign({}, row, {
+      imageUrl: row.image_url || row.imageUrl || null,
+      authorId: row.resident_id || row.residentId || row.authorId || null,
+      durationDays: row.duration_days || row.durationDays || 7,
+      modifiedAt: row.modified_at || row.modifiedAt || null,
+      authorName:
+        row.resident && row.resident.display_name
+          ? row.resident.display_name
+          : row.authorName || null,
+      authorAvatarUrl:
+        row.resident && row.resident.avatar_url
+          ? row.resident.avatar_url
+          : row.authorAvatarUrl || null,
+      authorRole:
+        row.resident && row.resident.role
+          ? row.resident.role
+          : row.authorRole || null,
+      createdAt: row.created_at || row.createdAt || null
+    });
+  }
+
+  function mapReportRow(row) {
+    return Object.assign({}, row, {
+      imageUrl: row.image_url || row.imageUrl || null,
+      authorId: row.resident_id || row.residentId || row.authorId || null,
+      durationDays: row.duration_days || row.durationDays || 7,
+      modifiedAt: row.modified_at || row.modifiedAt || null,
+      authorName:
+        row.resident && row.resident.display_name
+          ? row.resident.display_name
+          : row.authorName || null,
+      authorAvatarUrl:
+        row.resident && row.resident.avatar_url
+          ? row.resident.avatar_url
+          : row.authorAvatarUrl || null,
+      authorRole:
+        row.resident && row.resident.role
+          ? row.resident.role
+          : row.authorRole || null,
+      createdAt: row.created_at || row.createdAt || null
+    });
+  }
+
+  function mapServiceRow(row) {
                 return Object.assign({}, row, {
                   imageUrl: row.image_url || row.imageUrl || null,
+      authorId: row.resident_id || row.residentId || row.authorId || null,
+      durationDays: row.duration_days || row.durationDays || 7,
+      modifiedAt: row.modified_at || row.modifiedAt || null,
                   authorName:
                     row.resident && row.resident.display_name
                       ? row.resident.display_name
@@ -608,27 +548,129 @@ function App() {
                       : row.authorRole || null,
                   createdAt: row.created_at || row.createdAt || null
                 });
-              })
-            : [];
-          setClassifieds(items);
-          return;
+  }
+
+  function mapPollRow(row) {
+    return Object.assign({}, row, {
+      endDate: row.end_date || row.endDate || null,
+      options: Array.isArray(row.options) ? row.options : [],
+      durationDays: row.duration_days || row.durationDays || 7,
+      modifiedAt: row.modified_at || row.modifiedAt || null,
+      createdAt: row.created_at || row.createdAt || null,
+      authorId: row.resident_id || row.residentId || row.authorId || null
+    });
+  }
+
+  function mapResidenceRow(row) {
+    return {
+      id: row.id,
+      name: row.name || "",
+      address: row.address || "",
+      description: row.description || "",
+      imageUrl: row.image_url || row.imageUrl || null,
+      practicalInfo: Array.isArray(row.practical_info)
+        ? row.practical_info
+        : row.practical_info
+        ? [row.practical_info]
+        : [],
+      lastUpdatedBy: row.last_updated_by || null,
+      lastUpdatedAt: row.last_updated_at || row.updated_at || null,
+      createdAt: row.created_at || null,
+      status: row.status || "active"
+    };
+  }
+
+  function getSupabaseErrorMessage(error, fallback) {
+    if (error && error.message) return error.message;
+    return fallback;
+  }
+
+  async function uploadPostImage(file, folder) {
+    if (!file) return null;
+    if (!supabase) {
+      throw new Error(t(lang, "error_supabase_not_configured"));
+    }
+    const safeName = String(file.name || "image")
+      .replace(/[^a-zA-Z0-9._-]/g, "-")
+      .slice(0, 80);
+    const ext = safeName.includes(".")
+      ? safeName.split(".").pop()
+      : "jpg";
+    const filePath =
+      folder +
+      "/" +
+      (currentUser && currentUser.id ? currentUser.id : "anon") +
+      "/" +
+      Date.now() +
+      "-" +
+      Math.random().toString(36).slice(2, 8) +
+      "." +
+      ext;
+    const { error: uploadError } = await supabase.storage
+      .from("post-images")
+      .upload(filePath, file, { upsert: false });
+    if (uploadError) throw uploadError;
+    const { data } = supabase.storage
+      .from("post-images")
+      .getPublicUrl(filePath);
+    return data && data.publicUrl ? data.publicUrl : null;
+  }
+
+  useEffect(() => {
+    async function loadResidence() {
+      try {
+        setResidenceError(null);
+        if (!supabase) {
+          throw new Error(
+            t(lang, "error_residence_supabase_unavailable")
+          );
         }
-        const res = await fetch("/api/classifieds");
-        if (!res.ok) {
-          throw new Error("Impossible de charger les annonces");
+        const { data, error } = await supabase
+          .from("residence")
+          .select("*")
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          throw new Error(t(lang, "error_residence_not_found"));
         }
-        const data = await res.json();
-        setClassifieds(Array.isArray(data.items) ? data.items : []);
+        const items = data.map(mapResidenceRow);
+        const activeItems = items.filter((item) => item.status === "active");
+        setResidenceItems(activeItems);
+        setResidence(activeItems[0] || null);
       } catch (e) {
         console.error(e);
-        setClassifiedsError("Annonces indisponibles pour le moment.");
+        setResidenceError(t(lang, "error_residence_unavailable"));
+      }
+    }
+
+    async function loadClassifieds() {
+      try {
+        setClassifiedsError(null);
+        if (!supabase) {
+          throw new Error(
+            t(lang, "error_classifieds_supabase_unavailable")
+          );
+        }
+        const { data, error } = await supabase
+          .from("classifieds")
+          .select("*, resident:resident_id(display_name, avatar_url, role)");
+        if (error) throw error;
+        const items = Array.isArray(data) ? data.map(mapClassifiedRow) : [];
+        setClassifieds(items);
+      } catch (e) {
+        console.error(e);
+        setClassifiedsError(t(lang, "error_classifieds_unavailable"));
       }
     }
 
     async function loadShops() {
       try {
         setShopsError(null);
-        if (supabase) {
+        if (!supabase) {
+          throw new Error(
+            t(lang, "error_shops_supabase_unavailable")
+          );
+        }
           const { data, error } = await supabase.from("shops").select("*");
           if (error) throw error;
           const items = Array.isArray(data)
@@ -639,167 +681,87 @@ function App() {
               })
             : [];
           setShops(items);
-          return;
-        }
-        const res = await fetch("/api/shops");
-        if (!res.ok) {
-          throw new Error("Impossible de charger les commerçants");
-        }
-        const data = await res.json();
-        setShops(Array.isArray(data.items) ? data.items : []);
       } catch (e) {
         console.error(e);
-        setShopsError("Commerçants indisponibles pour le moment.");
+        setShopsError(t(lang, "error_shops_unavailable"));
       }
     }
 
     async function loadEvents() {
       try {
         setEventsError(null);
-        if (supabase) {
+        if (!supabase) {
+          throw new Error(
+            t(lang, "error_events_supabase_unavailable")
+          );
+        }
           const { data, error } = await supabase
             .from("events")
-            .select(
-              "*, resident:resident_id(display_name, avatar_url, role)"
-            );
+          .select("*, resident:resident_id(display_name, avatar_url, role)");
           if (error) throw error;
-          const items = Array.isArray(data)
-            ? data.map(function (row) {
-                return Object.assign({}, row, {
-                  imageUrl: row.image_url || row.imageUrl || null,
-                  authorName:
-                    row.resident && row.resident.display_name
-                      ? row.resident.display_name
-                      : row.authorName || null,
-                  authorAvatarUrl:
-                    row.resident && row.resident.avatar_url
-                      ? row.resident.avatar_url
-                      : row.authorAvatarUrl || null,
-                  authorRole:
-                    row.resident && row.resident.role
-                      ? row.resident.role
-                      : row.authorRole || null,
-                  createdAt: row.created_at || row.createdAt || null
-                });
-              })
-            : [];
+        const items = Array.isArray(data) ? data.map(mapEventRow) : [];
           setEvents(items);
-          return;
-        }
-        const res = await fetch("/api/events");
-        if (!res.ok) {
-          throw new Error("Impossible de charger les événements");
-        }
-        const data = await res.json();
-        setEvents(Array.isArray(data.items) ? data.items : []);
       } catch (e) {
         console.error(e);
-        setEventsError("Événements indisponibles pour le moment.");
+        setEventsError(t(lang, "error_events_unavailable"));
       }
     }
 
     async function loadReports() {
       try {
         setReportsError(null);
-        if (supabase) {
+        if (!supabase) {
+          throw new Error(
+            t(lang, "error_reports_supabase_unavailable")
+          );
+        }
           const { data, error } = await supabase
             .from("reports")
-            .select(
-              "*, resident:resident_id(display_name, avatar_url, role)"
-            );
+          .select("*, resident:resident_id(display_name, avatar_url, role)");
           if (error) throw error;
-          const items = Array.isArray(data)
-            ? data.map(function (row) {
-                return Object.assign({}, row, {
-                  imageUrl: row.image_url || row.imageUrl || null,
-                  authorName:
-                    row.resident && row.resident.display_name
-                      ? row.resident.display_name
-                      : row.authorName || null,
-                  authorAvatarUrl:
-                    row.resident && row.resident.avatar_url
-                      ? row.resident.avatar_url
-                      : row.authorAvatarUrl || null,
-                  authorRole:
-                    row.resident && row.resident.role
-                      ? row.resident.role
-                      : row.authorRole || null,
-                  createdAt: row.created_at || row.createdAt || null
-                });
-              })
-            : [];
+        const items = Array.isArray(data) ? data.map(mapReportRow) : [];
           setReports(items);
-          return;
-        }
-        const res = await fetch("/api/reports");
-        if (!res.ok) {
-          throw new Error("Impossible de charger les signalements");
-        }
-        const data = await res.json();
-        setReports(Array.isArray(data.items) ? data.items : []);
       } catch (e) {
         console.error(e);
-        setReportsError("Signalements indisponibles pour le moment.");
+        setReportsError(t(lang, "error_reports_unavailable"));
       }
     }
 
     async function loadServices() {
       try {
         setServicesError(null);
-        if (supabase) {
+        if (!supabase) {
+          throw new Error(
+            t(lang, "error_services_supabase_unavailable")
+          );
+        }
           const { data, error } = await supabase
             .from("neighbor_services")
-            .select(
-              "*, resident:resident_id(display_name, avatar_url, role)"
-            );
+          .select("*, resident:resident_id(display_name, avatar_url, role)");
           if (error) throw error;
-          const items = Array.isArray(data)
-            ? data.map(function (row) {
-                return Object.assign({}, row, {
-                  imageUrl: row.image_url || row.imageUrl || null,
-                  authorName:
-                    row.resident && row.resident.display_name
-                      ? row.resident.display_name
-                      : row.authorName || null,
-                  authorAvatarUrl:
-                    row.resident && row.resident.avatar_url
-                      ? row.resident.avatar_url
-                      : row.authorAvatarUrl || null,
-                  authorRole:
-                    row.resident && row.resident.role
-                      ? row.resident.role
-                      : row.authorRole || null,
-                  createdAt: row.created_at || row.createdAt || null
-                });
-              })
-            : [];
+        const items = Array.isArray(data) ? data.map(mapServiceRow) : [];
           setServices(items);
-          return;
-        }
-        const res = await fetch("/api/services");
-        if (!res.ok) {
-          throw new Error("Impossible de charger les services entre voisins");
-        }
-        const data = await res.json();
-        setServices(Array.isArray(data.items) ? data.items : []);
       } catch (e) {
         console.error(e);
-        setServicesError("Services entre voisins indisponibles pour le moment.");
+        setServicesError(t(lang, "error_services_unavailable"));
       }
     }
 
     async function loadPolls() {
       try {
         setPollsError(null);
-        const res = await fetch("/api/polls");
-        if (!res.ok) {
-          throw new Error("Impossible de charger les sondages");
+        if (!supabase) {
+          throw new Error(
+            t(lang, "error_polls_supabase_unavailable")
+          );
         }
-        const data = await res.json();
-        setPolls(Array.isArray(data.items) ? data.items : []);
+        const { data, error } = await supabase.from("polls").select("*");
+        if (error) throw error;
+        const items = Array.isArray(data) ? data.map(mapPollRow) : [];
+        setPolls(items);
       } catch (e) {
         console.error(e);
-        setPollsError("Sondages indisponibles pour le moment.");
+        setPollsError(t(lang, "error_polls_unavailable"));
       }
     }
 
@@ -812,31 +774,89 @@ function App() {
     loadPolls();
   }, []);
 
+  function getDurationDaysFromItem(item) {
+    const raw =
+      item &&
+      (item.durationDays || item.duration_days || item.duration || null);
+    const num = Number(raw);
+    return Number.isFinite(num) && num > 0 ? num : 7;
+  }
+
+  function getPostBaseDate(item) {
+    if (!item) return null;
+    const raw =
+      item.modifiedAt ||
+      item.modified_at ||
+      item.createdAt ||
+      item.created_at ||
+      null;
+    if (!raw) return null;
+    const date = new Date(raw);
+    if (!date || Number.isNaN(date.getTime())) return null;
+    return date;
+  }
+
+  function getRemainingMs(item) {
+    const baseDate = getPostBaseDate(item);
+    if (!baseDate) return null;
+    const duration = getDurationDaysFromItem(item);
+    const expiresAt = baseDate.getTime() + duration * 24 * 60 * 60 * 1000;
+    return expiresAt - Date.now();
+  }
+
+  function isActivePost(item) {
+    const remaining = getRemainingMs(item);
+    if (remaining == null) return true;
+    return remaining > 0;
+  }
+
   async function handleCreateReport(payload) {
     if (!payload || !payload.title || !payload.description) return;
+    const isEditing =
+      editingPost &&
+      editingPost.kind === "reports" &&
+      editingPost.item &&
+      editingPost.item.id != null;
+    if (isEditing) {
+      return handleUpdateReport(editingPost.item.id, payload);
+    }
     try {
       setCreatingReport(true);
       setReportsError(null);
-      const res = await fetch("/api/reports", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => null);
-        const msg =
-          (errData && errData.error) ||
-          "Impossible d'enregistrer le signalement.";
-        throw new Error(msg);
+      if (!supabase) {
+        throw new Error(
+          t(lang, "error_report_create_supabase")
+        );
       }
-      const created = await res.json();
+      const insertPayload = {
+        title: payload.title,
+        category: payload.category || "",
+        description: payload.description,
+        image_url: payload.imageUrl || null,
+        status: "ouvert",
+        duration_days: payload.durationDays || 7,
+        resident_id: currentUser ? currentUser.id : null
+      };
+      if (payload.imageFile) {
+        insertPayload.image_url = await uploadPostImage(
+          payload.imageFile,
+          "reports"
+        );
+      }
+      const { data, error } = await supabase
+        .from("reports")
+        .insert(insertPayload)
+        .select("*, resident:resident_id(display_name, avatar_url, role)")
+        .single();
+      if (error) throw error;
+      const created = data ? mapReportRow(data) : null;
+      if (created) {
       setReports((prev) => [created, ...(prev || [])]);
+      }
     } catch (e) {
       console.error(e);
       setReportsError(
-        e && e.message
-          ? e.message
-          : "Erreur lors de la création du signalement."
+        e && e.message ? e.message : t(lang, "error_report_create")
       );
     } finally {
       setCreatingReport(false);
@@ -845,29 +865,49 @@ function App() {
 
   async function handleCreateService(payload) {
     if (!payload || !payload.title || !payload.description) return;
+    const isEditing =
+      editingPost &&
+      editingPost.kind === "services" &&
+      editingPost.item &&
+      editingPost.item.id != null;
+    if (isEditing) {
+      return handleUpdateService(editingPost.item.id, payload);
+    }
     try {
       setCreatingService(true);
       setServicesError(null);
-      const res = await fetch("/api/services", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => null);
-        const msg =
-          (errData && errData.error) ||
-          "Impossible d'enregistrer le service.";
-        throw new Error(msg);
+      if (!supabase) {
+        throw new Error(
+          t(lang, "error_service_create_supabase")
+        );
       }
-      const created = await res.json();
+      const insertPayload = {
+        title: payload.title,
+        kind: payload.kind || "offre",
+        description: payload.description,
+        duration_days: payload.durationDays || 7,
+        resident_id: currentUser ? currentUser.id : null
+      };
+      if (payload.imageFile) {
+        insertPayload.image_url = await uploadPostImage(
+          payload.imageFile,
+          "services"
+        );
+      }
+      const { data, error } = await supabase
+        .from("neighbor_services")
+        .insert(insertPayload)
+        .select("*, resident:resident_id(display_name, avatar_url, role)")
+        .single();
+      if (error) throw error;
+      const created = data ? mapServiceRow(data) : null;
+      if (created) {
       setServices((prev) => [created, ...(prev || [])]);
+      }
     } catch (e) {
       console.error(e);
       setServicesError(
-        e && e.message
-          ? e.message
-          : "Erreur lors de la création du service."
+        e && e.message ? e.message : t(lang, "error_service_create")
       );
     } finally {
       setCreatingService(false);
@@ -880,14 +920,14 @@ function App() {
       setMembersError(null);
       const res = await fetch("/api/members");
       if (!res.ok) {
-        throw new Error("Impossible de charger les membres.");
+        throw new Error(t(lang, "error_members_load"));
       }
       const data = await res.json();
       setMembers(Array.isArray(data.items) ? data.items : []);
     } catch (e) {
       console.error(e);
       setMembersError(
-        e && e.message ? e.message : "Erreur lors du chargement des membres."
+        e && e.message ? e.message : t(lang, "error_members_load")
       );
     } finally {
       setMembersLoading(false);
@@ -905,7 +945,7 @@ function App() {
         const errData = await res.json().catch(() => null);
         throw new Error(
           (errData && errData.error) ||
-            "Impossible de modifier le rôle de ce membre."
+            t(lang, "error_member_role_update_forbidden")
         );
       }
       const updated = await res.json();
@@ -917,13 +957,13 @@ function App() {
       setMembersError(
         e && e.message
           ? e.message
-          : "Erreur lors de la modification du rôle du membre."
+          : t(lang, "error_member_role_update")
       );
     }
   }
 
   async function handleDeleteMember(id) {
-    if (!window.confirm("Supprimer ce membre ?")) return;
+    if (!window.confirm(t(lang, "confirm_member_delete"))) return;
     try {
       const res = await fetch("/api/members/" + id, {
         method: "DELETE"
@@ -932,7 +972,7 @@ function App() {
         const errData = await res.json().catch(() => null);
         throw new Error(
           (errData && errData.error) ||
-            "Impossible de supprimer ce membre."
+            t(lang, "error_member_delete")
         );
       }
       await res.json();
@@ -940,9 +980,7 @@ function App() {
     } catch (e) {
       console.error(e);
       setMembersError(
-        e && e.message
-          ? e.message
-          : "Erreur lors de la suppression du membre."
+        e && e.message ? e.message : t(lang, "error_member_delete_generic")
       );
     }
   }
@@ -957,28 +995,50 @@ function App() {
     ) {
       return;
     }
+    const isEditing =
+      editingPost &&
+      editingPost.kind === "polls" &&
+      editingPost.item &&
+      editingPost.item.id != null;
+    if (isEditing) {
+      return handleUpdatePoll(editingPost.item.id, payload);
+    }
     try {
       setCreatingPoll(true);
       setPollsError(null);
-      const res = await fetch("/api/polls", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => null);
-        const msg =
-          (errData && errData.error) ||
-          "Impossible d'enregistrer le sondage.";
-        throw new Error(msg);
+      if (!supabase) {
+        throw new Error(
+          t(lang, "error_poll_create_supabase")
+        );
       }
-      const created = await res.json();
+      const cleanedOptions = (payload.options || []).map((opt) => ({
+        id: opt.id,
+        label: opt.label,
+        votes: 0
+      }));
+      const insertPayload = {
+        title: payload.title,
+        description: payload.description || "",
+        end_date: payload.endDate,
+        options: cleanedOptions,
+        duration_days: payload.durationDays || 7,
+        resident_id: currentUser ? currentUser.id : null
+      };
+      const { data, error } = await supabase
+        .from("polls")
+        .insert(insertPayload)
+        .select("*")
+        .single();
+      if (error) throw error;
+      const created = data ? mapPollRow(data) : null;
+      if (created) {
       setPolls((prev) => [created, ...(prev || [])]);
+      }
       setShowPollModal(false);
     } catch (e) {
       console.error(e);
       setPollsError(
-        e && e.message ? e.message : "Erreur lors de la création du sondage."
+        e && e.message ? e.message : t(lang, "error_poll_create")
       );
     } finally {
       setCreatingPoll(false);
@@ -988,28 +1048,54 @@ function App() {
   async function handleVotePoll(pollId, optionId) {
     if (!pollId || !optionId) return;
     try {
-      const res = await fetch(`/api/polls/${pollId}/vote`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ optionId, residentId })
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => null);
-        const msg =
-          (errData && errData.error) ||
-          "Impossible d'enregistrer votre vote pour ce sondage.";
-        throw new Error(msg);
+      if (!supabase) {
+        throw new Error(
+          t(lang, "error_poll_vote_supabase")
+        );
       }
-      const updated = await res.json();
+      let votesByPoll = {};
+      try {
+        votesByPoll = JSON.parse(
+          window.localStorage.getItem("pollVotesByResident") || "{}"
+        );
+      } catch (e) {
+        votesByPoll = {};
+      }
+      if (votesByPoll[pollId]) {
+        throw new Error(t(lang, "error_poll_already_voted"));
+      }
+      const poll = (polls || []).find((p) => p.id === pollId);
+      if (!poll) {
+        throw new Error(t(lang, "error_poll_not_found"));
+      }
+      const updatedOptions = (poll.options || []).map((opt) => {
+        if (Number(opt.id) !== Number(optionId)) return opt;
+        return Object.assign({}, opt, { votes: (opt.votes || 0) + 1 });
+      });
+      const { data, error } = await supabase
+        .from("polls")
+        .update({ options: updatedOptions })
+        .eq("id", pollId)
+        .select("*")
+        .single();
+      if (error) throw error;
+      const updated = data ? mapPollRow(data) : null;
+      if (updated) {
       setPolls((prev) =>
         (prev || []).map((p) => (p.id === updated.id ? updated : p))
+        );
+      }
+      votesByPoll[pollId] = optionId;
+      window.localStorage.setItem(
+        "pollVotesByResident",
+        JSON.stringify(votesByPoll)
       );
     } catch (e) {
       console.error(e);
       setPollsError(
         e && e.message
           ? e.message
-          : "Erreur lors de l'enregistrement de votre vote."
+          : t(lang, "error_poll_vote")
       );
     }
   }
@@ -1018,30 +1104,52 @@ function App() {
     if (!payload || !payload.title || !payload.date || !payload.description) {
       return;
     }
+    const isEditing =
+      editingPost &&
+      editingPost.kind === "events" &&
+      editingPost.item &&
+      editingPost.item.id != null;
+    if (isEditing) {
+      return handleUpdateEvent(editingPost.item.id, payload);
+    }
     try {
       setCreatingEvent(true);
       setEventsError(null);
-      const res = await fetch("/api/events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => null);
-        const msg =
-          (errData && errData.error) ||
-          "Impossible d'enregistrer l'événement.";
-        throw new Error(msg);
+      if (!supabase) {
+        throw new Error(
+          t(lang, "error_event_create_supabase")
+        );
       }
-      const created = await res.json();
+      const insertPayload = {
+        title: payload.title,
+        date: payload.date,
+        time: payload.time || null,
+        location: payload.location || null,
+        description: payload.description || "",
+        duration_days: payload.durationDays || 7,
+        resident_id: currentUser ? currentUser.id : null
+      };
+      if (payload.imageFile) {
+        insertPayload.image_url = await uploadPostImage(
+          payload.imageFile,
+          "events"
+        );
+      }
+      const { data, error } = await supabase
+        .from("events")
+        .insert(insertPayload)
+        .select("*, resident:resident_id(display_name, avatar_url, role)")
+        .single();
+      if (error) throw error;
+      const created = data ? mapEventRow(data) : null;
+      if (created) {
       setEvents((prev) => [created, ...(prev || [])]);
+      }
       setShowEventModal(false);
     } catch (e) {
       console.error(e);
       setEventsError(
-        e && e.message
-          ? e.message
-          : "Erreur lors de la création de l'événement."
+        e && e.message ? e.message : t(lang, "error_event_create")
       );
     } finally {
       setCreatingEvent(false);
@@ -1051,45 +1159,193 @@ function App() {
   async function handleCreateClassified(e) {
     e.preventDefault();
     if (!formTitle.trim() || !formDescription.trim()) {
-      alert("Merci de remplir au moins un titre et une description.");
+      alert(t(lang, "form_error_title_desc_required"));
       return;
+    }
+    const isEditing =
+      editingPost &&
+      editingPost.kind === "classifieds" &&
+      editingPost.item &&
+      editingPost.item.id != null;
+    if (isEditing) {
+      return handleUpdateClassified(editingPost.item.id);
     }
     try {
       setCreating(true);
       setClassifiedsError(null);
-      const res = await fetch("/api/classifieds", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
+      if (!supabase) {
+        throw new Error(
+          t(lang, "error_classified_create_supabase")
+        );
+      }
+      const insertPayload = {
           type: formType,
           title: formTitle,
           description: formDescription,
-          price: formPrice
-        })
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => null);
-        const msg =
-          (errData && errData.error) ||
-          "Impossible d'enregistrer l'annonce.";
-        throw new Error(msg);
+        price:
+          formPrice != null && !Number.isNaN(Number(formPrice))
+            ? Number(formPrice)
+            : null,
+        currency: "PLN",
+        duration_days: formDurationDays || 7,
+        resident_id: currentUser ? currentUser.id : null
+      };
+      if (formImageFile) {
+        insertPayload.image_url = await uploadPostImage(
+          formImageFile,
+          "classifieds"
+        );
       }
-      const created = await res.json();
+      const { data, error } = await supabase
+        .from("classifieds")
+        .insert(insertPayload)
+        .select("*, resident:resident_id(display_name, avatar_url, role)")
+        .single();
+      if (error) throw error;
+      const created = data ? mapClassifiedRow(data) : null;
+      if (created) {
       setClassifieds((prev) => [created, ...prev]);
+      }
       setFormTitle("");
       setFormDescription("");
       setFormPrice("");
+      setFormDurationDays(7);
+      setFormImageFile(null);
     } catch (err) {
       console.error(err);
       setClassifiedsError(
-        err && err.message
-          ? err.message
-          : "Erreur lors de la création de l'annonce."
+        err && err.message ? err.message : t(lang, "error_classified_create")
       );
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function handleUpdateClassified(id) {
+    try {
+      setCreating(true);
+      setClassifiedsError(null);
+      if (!supabase) {
+        throw new Error(
+          t(lang, "error_classified_update_supabase")
+        );
+      }
+      const updatePayload = {
+        type: formType,
+        title: formTitle,
+        description: formDescription,
+        price:
+          formPrice != null && !Number.isNaN(Number(formPrice))
+            ? Number(formPrice)
+            : null,
+        duration_days: formDurationDays || 7,
+        modified_at: new Date().toISOString()
+      };
+      if (formImageFile) {
+        updatePayload.image_url = await uploadPostImage(
+          formImageFile,
+          "classifieds"
+        );
+      }
+      const { data, error } = await supabase
+        .from("classifieds")
+        .update(updatePayload)
+        .eq("id", id)
+        .select("*, resident:resident_id(display_name, avatar_url, role)")
+        .single();
+      if (error) throw error;
+      const updated = data ? mapClassifiedRow(data) : null;
+      if (updated) {
+        setClassifieds((prev) =>
+          (prev || []).map((item) => (item.id === updated.id ? updated : item))
+        );
+      }
+      setEditingPost(null);
+      setShowClassifiedsModal(false);
+      setFormTitle("");
+      setFormDescription("");
+      setFormPrice("");
+      setFormDurationDays(7);
+      setFormImageFile(null);
+    } catch (err) {
+      console.error(err);
+      setClassifiedsError(
+        err && err.message ? err.message : t(lang, "error_classified_update")
+      );
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function handleSaveResidence(payload) {
+    try {
+      setSavingResidence(true);
+      setResidenceError(null);
+      if (!supabase) {
+        throw new Error(
+          t(lang, "error_residence_save_supabase")
+        );
+      }
+      const safePayload = {
+        name: payload.name || "",
+        address: payload.address || "",
+        description: payload.description || "",
+        practical_info: Array.isArray(payload.practicalInfo)
+          ? payload.practicalInfo
+          : [],
+        last_updated_by: currentUser ? currentUser.name || null : null,
+        last_updated_at: new Date().toISOString(),
+        status: "active"
+      };
+      if (payload.imageFile) {
+        safePayload.image_url = await uploadPostImage(
+          payload.imageFile,
+          "residence"
+        );
+      }
+      const { data, error } = await supabase
+        .from("residence")
+        .insert(safePayload)
+        .select("*")
+        .single();
+      if (error) throw error;
+      if (data) {
+        const created = mapResidenceRow(data);
+        setResidenceItems((prev) => [created, ...(prev || [])]);
+        setResidence(created);
+      }
+    } catch (e) {
+      console.error(e);
+      setResidenceError(
+        e && e.message ? e.message : t(lang, "error_residence_save")
+      );
+    } finally {
+      setSavingResidence(false);
+    }
+  }
+
+  async function handleDeleteResidence(item) {
+    if (!item || !item.id) return;
+    if (!window.confirm(t(lang, "confirm_residence_delete"))) return;
+    try {
+      setResidenceError(null);
+      if (!supabase) {
+        throw new Error(
+          t(lang, "error_residence_delete_supabase")
+        );
+      }
+      const { error } = await supabase
+        .from("residence")
+        .delete()
+        .eq("id", item.id);
+      if (error) throw error;
+      setResidenceItems((prev) => (prev || []).filter((r) => r.id !== item.id));
+      setResidence((prev) => (prev && prev.id === item.id ? null : prev));
+    } catch (e) {
+      console.error(e);
+      setResidenceError(
+        e && e.message ? e.message : t(lang, "error_residence_delete")
+      );
     }
   }
 
@@ -1098,91 +1354,276 @@ function App() {
     else if (field === "title") setFormTitle(value);
     else if (field === "description") setFormDescription(value);
     else if (field === "price") setFormPrice(value);
+    else if (field === "durationDays") setFormDurationDays(value);
+    else if (field === "imageFile") setFormImageFile(value || null);
   }
 
-  // Création de commerce sera finalement gérée uniquement par les modérateurs / dev
-  // (via Supabase plus tard). Aucun formulaire public n'appelle cette logique côté client.
+  function getPostId(item) {
+    return item && item.id != null ? item.id : null;
+  }
 
-  async function loadModerators() {
+  async function handleUpdateEvent(id, payload) {
     try {
-      setModeratorsError(null);
-      const res = await fetch("/api/moderators");
-      if (!res.ok) {
-        throw new Error("Impossible de charger les modérateurs.");
+      setCreatingEvent(true);
+      setEventsError(null);
+      if (!supabase) {
+        throw new Error(
+          t(lang, "error_event_update_supabase")
+        );
       }
-      const data = await res.json();
-      setModerators(Array.isArray(data.items) ? data.items : []);
+      const updatePayload = {
+        title: payload.title,
+        date: payload.date,
+        time: payload.time || null,
+        location: payload.location || null,
+        description: payload.description || "",
+        duration_days: payload.durationDays || 7,
+        modified_at: new Date().toISOString()
+      };
+      if (payload.imageFile) {
+        updatePayload.image_url = await uploadPostImage(
+          payload.imageFile,
+          "events"
+        );
+      }
+      const { data, error } = await supabase
+        .from("events")
+        .update(updatePayload)
+        .eq("id", id)
+        .select("*, resident:resident_id(display_name, avatar_url, role)")
+        .single();
+      if (error) throw error;
+      const updated = data ? mapEventRow(data) : null;
+      if (updated) {
+        setEvents((prev) =>
+          (prev || []).map((item) => (item.id === updated.id ? updated : item))
+        );
+      }
+      setEditingPost(null);
+      setShowEventModal(false);
     } catch (e) {
       console.error(e);
-      setModeratorsError(
-        e && e.message ? e.message : "Erreur lors du chargement des modérateurs."
+      setEventsError(
+        e && e.message ? e.message : t(lang, "error_event_update")
       );
+    } finally {
+      setCreatingEvent(false);
     }
   }
 
-  async function handleAddModerator() {
-    const name = window.prompt("Nom du modérateur :");
-    if (!name) return;
-    const email = window.prompt("E-mail du modérateur :");
-    if (!email) return;
+  async function handleUpdateReport(id, payload) {
     try {
-      setModeratorsError(null);
-      const res = await fetch("/api/moderators", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email })
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => null);
+      setCreatingReport(true);
+      setReportsError(null);
+      if (!supabase) {
         throw new Error(
-          (errData && errData.error) ||
-            "Impossible d'ajouter ce modérateur."
+          t(lang, "error_report_update_supabase")
         );
       }
-      const created = await res.json();
-      setModerators((prev) => [...prev, created]);
+      const updatePayload = {
+        title: payload.title,
+        category: payload.category || "",
+        description: payload.description || "",
+        duration_days: payload.durationDays || 7,
+        modified_at: new Date().toISOString()
+      };
+      if (payload.imageFile) {
+        updatePayload.image_url = await uploadPostImage(
+          payload.imageFile,
+          "reports"
+        );
+      }
+      const { data, error } = await supabase
+        .from("reports")
+        .update(updatePayload)
+        .eq("id", id)
+        .select("*, resident:resident_id(display_name, avatar_url, role)")
+        .single();
+      if (error) throw error;
+      const updated = data ? mapReportRow(data) : null;
+      if (updated) {
+        setReports((prev) =>
+          (prev || []).map((item) => (item.id === updated.id ? updated : item))
+        );
+      }
+      setEditingPost(null);
+      setShowReportModal(false);
     } catch (e) {
       console.error(e);
-      setModeratorsError(
-        e && e.message ? e.message : "Erreur lors de l'ajout du modérateur."
+      setReportsError(
+        e && e.message ? e.message : t(lang, "error_report_update")
       );
+    } finally {
+      setCreatingReport(false);
     }
   }
 
-  async function handleRemoveModerator(id) {
-    if (!window.confirm("Supprimer ce modérateur ?")) return;
+  async function handleUpdateService(id, payload) {
     try {
-      setModeratorsError(null);
-      const res = await fetch("/api/moderators/" + id, {
-        method: "DELETE"
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => null);
+      setCreatingService(true);
+      setServicesError(null);
+      if (!supabase) {
         throw new Error(
-          (errData && errData.error) ||
-            "Impossible de supprimer ce modérateur."
+          t(lang, "error_service_update_supabase")
         );
       }
-      await res.json();
-      setModerators((prev) => prev.filter((m) => m.id !== id));
+      const updatePayload = {
+        title: payload.title,
+        kind: payload.kind || "offre",
+        description: payload.description || "",
+        duration_days: payload.durationDays || 7,
+        modified_at: new Date().toISOString()
+      };
+      if (payload.imageFile) {
+        updatePayload.image_url = await uploadPostImage(
+          payload.imageFile,
+          "services"
+        );
+      }
+      const { data, error } = await supabase
+        .from("neighbor_services")
+        .update(updatePayload)
+        .eq("id", id)
+        .select("*, resident:resident_id(display_name, avatar_url, role)")
+        .single();
+      if (error) throw error;
+      const updated = data ? mapServiceRow(data) : null;
+      if (updated) {
+        setServices((prev) =>
+          (prev || []).map((item) => (item.id === updated.id ? updated : item))
+        );
+      }
+      setEditingPost(null);
+      setShowServiceModal(false);
     } catch (e) {
       console.error(e);
-      setModeratorsError(
+      setServicesError(
+        e && e.message ? e.message : t(lang, "error_service_update")
+      );
+    } finally {
+      setCreatingService(false);
+    }
+  }
+
+  async function handleUpdatePoll(id, payload) {
+    try {
+      setCreatingPoll(true);
+      setPollsError(null);
+      if (!supabase) {
+        throw new Error(
+          t(lang, "error_poll_update_supabase")
+        );
+      }
+      const updatedOptions = (payload.options || []).map((opt, idx) => ({
+        id: idx + 1,
+        label: opt.label,
+        votes:
+          (editingPost &&
+            editingPost.item &&
+            Array.isArray(editingPost.item.options) &&
+            editingPost.item.options[idx] &&
+            editingPost.item.options[idx].votes) ||
+          0
+      }));
+      const updatePayload = {
+        title: payload.title,
+        description: payload.description || "",
+        end_date: payload.endDate || null,
+        options: updatedOptions,
+        duration_days: payload.durationDays || 7,
+        modified_at: new Date().toISOString()
+      };
+      const { data, error } = await supabase
+        .from("polls")
+        .update(updatePayload)
+        .eq("id", id)
+        .select("*")
+        .single();
+      if (error) throw error;
+      const updated = data ? mapPollRow(data) : null;
+      if (updated) {
+        setPolls((prev) =>
+          (prev || []).map((item) => (item.id === updated.id ? updated : item))
+        );
+      }
+      setEditingPost(null);
+      setShowPollModal(false);
+    } catch (e) {
+      console.error(e);
+      setPollsError(
+        e && e.message ? e.message : t(lang, "error_poll_update")
+      );
+    } finally {
+      setCreatingPoll(false);
+    }
+  }
+
+  async function handleDeleteMyPost(kind, item) {
+    const id = getPostId(item);
+    if (!id) return;
+    if (!window.confirm(t(lang, "confirm_post_delete"))) return;
+    try {
+      if (!supabase) {
+        throw new Error(
+          t(lang, "error_delete_supabase")
+        );
+      }
+      const tableByKind = {
+        classifieds: "classifieds",
+        events: "events",
+        reports: "reports",
+        services: "neighbor_services",
+        polls: "polls"
+      };
+      const table = tableByKind[kind];
+      if (!table) return;
+      const { error } = await supabase.from(table).delete().eq("id", id);
+      if (error) throw error;
+      if (kind === "classifieds") {
+        setClassifieds((prev) => (prev || []).filter((p) => p.id !== id));
+      } else if (kind === "events") {
+        setEvents((prev) => (prev || []).filter((p) => p.id !== id));
+      } else if (kind === "reports") {
+        setReports((prev) => (prev || []).filter((p) => p.id !== id));
+      } else if (kind === "services") {
+        setServices((prev) => (prev || []).filter((p) => p.id !== id));
+      } else if (kind === "polls") {
+        setPolls((prev) => (prev || []).filter((p) => p.id !== id));
+      }
+    } catch (e) {
+      console.error(e);
+      const msg =
         e && e.message
           ? e.message
-          : "Erreur lors de la suppression du modérateur."
-      );
+          : t(lang, "error_delete_generic");
+      if (kind === "classifieds") setClassifiedsError(msg);
+      else if (kind === "events") setEventsError(msg);
+      else if (kind === "reports") setReportsError(msg);
+      else if (kind === "services") setServicesError(msg);
+      else if (kind === "polls") setPollsError(msg);
     }
   }
 
-  React.useEffect(() => {
-    if (
-      currentUser &&
-      (currentUser.role === "admin" || currentUser.role === "super_admin")
-    ) {
-      loadModerators();
+  function handleEditMyPost(kind, item) {
+    if (!item) return;
+    setEditingPost({ kind, item });
+    if (kind === "classifieds") {
+      setFormType(item.type || "objet");
+      setFormTitle(item.title || "");
+      setFormDescription(item.description || "");
+      setFormPrice(item.price != null ? item.price : "");
+      setFormDurationDays(getDurationDaysFromItem(item));
+      setShowClassifiedsModal(true);
+    } else if (kind === "events") {
+      setShowEventModal(true);
+    } else if (kind === "reports") {
+      setShowReportModal(true);
+    } else if (kind === "services") {
+      setShowServiceModal(true);
+    } else if (kind === "polls") {
+      setShowPollModal(true);
     }
-  }, [currentUser && currentUser.role]);
+  }
 
   React.useEffect(() => {
     if (
@@ -1209,7 +1650,7 @@ function App() {
         if (!res.ok) {
           const msg =
             (data && data.error) ||
-            "Impossible d'activer l'accès temporaire pour le moment.";
+            t(lang, "error_temp_access_unavailable");
           throw new Error(msg);
         }
         if (data && data.user) {
@@ -1223,7 +1664,7 @@ function App() {
       const now = new Date().toISOString();
       const demoUser = {
         id: "demo-super-admin",
-        name: "Admin demonstracyjny",
+        name: t(lang, "demo_user_name"),
         avatarUrl:
           "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=200",
         facebookProfileUrl: null,
@@ -1239,7 +1680,7 @@ function App() {
       setAuthError(
         e && e.message
           ? e.message
-          : "Impossible d'activer l'accès temporaire pour le moment."
+          : t(lang, "error_temp_access_unavailable")
       );
     }
   }
@@ -1247,7 +1688,7 @@ function App() {
   async function handleSupabaseFacebookLogin() {
     if (!supabase) {
       setAuthError(
-        "Supabase n'est pas initialisé côté client. Vérifiez le script dans index.html."
+        t(lang, "error_supabase_not_initialized")
       );
       return;
     }
@@ -1268,7 +1709,7 @@ function App() {
       setAuthError(
         e && e.message
           ? e.message
-          : "Impossible de démarrer la connexion Facebook pour le moment."
+          : t(lang, "error_fb_login_start")
       );
     }
   }
@@ -1276,7 +1717,7 @@ function App() {
   async function handleProfileUrlLogin(facebookProfileUrl) {
     const url = (facebookProfileUrl || "").trim();
     if (!url) {
-      alert("Merci de coller l'URL de votre profil Facebook.");
+      alert(t(lang, "alert_fb_profile_url_missing"));
       return;
     }
     try {
@@ -1290,7 +1731,7 @@ function App() {
       if (!res.ok) {
         throw new Error(
           (data && data.error) ||
-            "Impossible de vérifier votre profil Facebook pour le moment."
+            t(lang, "error_fb_profile_check")
         );
       }
       if (data && data.authenticated && data.user) {
@@ -1318,7 +1759,7 @@ function App() {
       setAuthError(
         e && e.message
           ? e.message
-          : "Erreur lors de la connexion avec votre lien Facebook."
+          : t(lang, "error_fb_profile_check")
       );
     }
   }
@@ -1353,7 +1794,7 @@ function App() {
     return e(
       "div",
       { className: "app-loading" },
-      "Chargement de votre session..."
+      t(lang, "auth_loading_session")
     );
   }
 
@@ -1362,6 +1803,7 @@ function App() {
       return e(OnboardingStep, {
         currentUser: null,
         initialFacebookProfileUrl: pendingProfileUrl,
+        lang,
         onCompleted: function (user) {
           if (user) {
             setCurrentUser(user);
@@ -1409,11 +1851,11 @@ function App() {
         e(
           "div",
           { className: "card-content" },
-          e("h2", null, "Compte bloqué"),
+          e("h2", null, t(lang, "blocked_title")),
           e(
             "p",
             null,
-            "Votre compte a été bloqué par un modérateur. Contactez la résidence si vous pensez qu'il s'agit d'une erreur."
+            t(lang, "blocked_body")
           )
         )
       )
@@ -1424,6 +1866,7 @@ function App() {
     return e(OnboardingStep, {
       currentUser,
       initialFacebookProfileUrl: currentUser.facebookProfileUrl,
+      lang,
       onCompleted: function (user) {
         if (user) {
           setCurrentUser(user);
@@ -1443,11 +1886,11 @@ function App() {
         e(
           "div",
           { className: "card-content" },
-          e("h2", null, "En attente de validation"),
+          e("h2", null, t(lang, "pending_title")),
           e(
             "p",
             null,
-            "Votre demande d'accès a été envoyée. Un modérateur doit maintenant valider votre compte."
+            t(lang, "pending_body")
           ),
           e(
             "div",
@@ -1459,7 +1902,7 @@ function App() {
                 className: "btn-secondary",
                 onClick: handleLogoutToHome
               },
-              "Revenir à la page d'accueil"
+              t(lang, "pending_back_home")
             )
           )
         )
@@ -1477,6 +1920,40 @@ function App() {
   // Quand on est dans la navigation admin (membres / à valider / stats),
   // on n'affiche pas la colonne de droite (bus, météo, etc.).
   const showRightColumn = !(isStaff && showAdminNav);
+
+  function getItemAuthorId(item) {
+    if (!item) return null;
+    return (
+      item.authorId ||
+      item.author_id ||
+      item.resident_id ||
+      item.residentId ||
+      null
+    );
+  }
+
+  function isMyPost(item) {
+    if (!currentUser || !currentUser.id) return false;
+    const authorId = getItemAuthorId(item);
+    if (!authorId) return false;
+    return String(authorId) === String(currentUser.id);
+  }
+
+  const myPosts = {
+    classifieds: (classifieds || []).filter(isMyPost).filter(isActivePost),
+    events: (events || []).filter(isMyPost).filter(isActivePost),
+    reports: (reports || []).filter(isMyPost).filter(isActivePost),
+    services: (services || []).filter(isMyPost).filter(isActivePost),
+    polls: (polls || []).filter(isMyPost).filter(isActivePost)
+  };
+
+  const visibleClassifieds = (classifieds || []).filter((item) => {
+    if (!item || item.status !== "pending") return true;
+    return isMyPost(item);
+  });
+
+  const editingKind = editingPost && editingPost.kind;
+  const editingItem = editingPost && editingPost.item;
 
   let leftContent;
   if (effectiveAdminView !== "dashboard") {
@@ -1505,7 +1982,8 @@ function App() {
           "div",
           { className: "page-sections" },
           e(AdminPendingUsers, {
-            onCountChange: setPendingRequestsCount
+            onCountChange: setPendingRequestsCount,
+            lang
           })
         )
       : e(
@@ -1514,12 +1992,28 @@ function App() {
           e(StatsOverview, {
             polls,
             members,
-            classifieds
+            classifieds,
+            lang
           })
         );
   } else {
     // Vue dashboard : on bascule en fonction de mainPage (home / about / feedback)
-    if (mainPage === "about") {
+    if (mainPage === "myPosts") {
+      leftContent = e(
+        "div",
+        { className: "page-sections" },
+        e(MyPostsSection, {
+          lang,
+          classifieds: myPosts.classifieds,
+          events: myPosts.events,
+          reports: myPosts.reports,
+          services: myPosts.services,
+          polls: myPosts.polls,
+          onEdit: handleEditMyPost,
+          onDelete: handleDeleteMyPost
+        })
+      );
+    } else if (mainPage === "about") {
       leftContent = e(
         "div",
         { className: "page-sections" },
@@ -1541,16 +2035,25 @@ function App() {
         "div",
         { className: "page-sections" },
         e(SectionsQuickNav, { lang }),
-        e(ResidenceCard, {
-          residence,
-          residenceError,
-          lang
+        e(ResidencePostsSection, {
+          items: residenceItems,
+          error: residenceError,
+          lang,
+          isAdmin: role === "admin" || role === "super_admin",
+          onDelete: handleDeleteResidence,
+          onOpenForm: () => setShowResidenceForm(true),
+          onSelect: (item) => {
+            setSelectedResidencePost(item);
+            setShowResidencePostModal(true);
+          }
         }),
         e(ClassifiedsNeighbors, {
-          classifieds,
+          classifieds: visibleClassifieds,
           classifiedsError,
           onOpenForm: () => {
+            setEditingPost(null);
             setFormType("objet");
+            setFormDurationDays(7);
             setShowClassifiedsModal(true);
           },
           onSelect: (item) => {
@@ -1562,19 +2065,54 @@ function App() {
         e(EventsSection, {
           events,
           eventsError,
-          onOpenForm: () => setShowEventModal(true),
+          onOpenForm: () => {
+            setEditingPost(null);
+            setShowEventModal(true);
+          },
+          onSelect: (item) => {
+            setSelectedEventPost(item);
+            setShowEventPostModal(true);
+          },
           lang
         }),
         e(NeighborServicesSection, {
           services,
           servicesError,
-          onOpenForm: () => setShowServiceModal(true),
+          onOpenForm: () => {
+            setEditingPost(null);
+            setShowServiceModal(true);
+          },
+          onSelect: (item) => {
+            setSelectedServicePost(item);
+            setShowServicePostModal(true);
+          },
           lang
         }),
         e(ReportsSection, {
           reports,
           reportsError,
-          onOpenForm: () => setShowReportModal(true),
+          onOpenForm: () => {
+            setEditingPost(null);
+            setShowReportModal(true);
+          },
+          onSelect: (item) => {
+            setSelectedReportPost(item);
+            setShowReportPostModal(true);
+          },
+          lang
+        }),
+        e(PollsSection, {
+          polls,
+          pollsError,
+          onOpenForm: () => {
+            setEditingPost(null);
+            setShowPollModal(true);
+          },
+          onVote: handleVotePoll,
+          onSelect: (item) => {
+            setSelectedPollPost(item);
+            setShowPollPostModal(true);
+          },
           lang
         })
       );
@@ -1596,16 +2134,12 @@ function App() {
           e(
             "div",
             { className: "dashboard-hero-title" },
-            window.i18n && window.i18n.t
-              ? window.i18n.t(lang, "dashboard_hero_title")
-              : "Résidence Mały Kack – Gdynia"
+            t(lang, "dashboard_hero_title")
           ),
           e(
             "div",
             { className: "dashboard-hero-subtitle" },
-            window.i18n && window.i18n.t
-              ? window.i18n.t(lang, "dashboard_hero_subtitle")
-              : "Infos pratiques, bus, météo et vie de la résidence."
+            t(lang, "dashboard_hero_subtitle")
             ),
           isStaff &&
             e(
@@ -1622,16 +2156,10 @@ function App() {
                     });
                   }
                 },
-                window.i18n && window.i18n.t
-                  ? window.i18n.t(
+                t(
                       lang,
-                      showAdminNav
-                        ? "admin_hero_btn_close"
-                        : "admin_hero_btn_open"
+                  showAdminNav ? "admin_hero_btn_close" : "admin_hero_btn_open"
                     )
-                  : showAdminNav
-                  ? "Hide admin navigation"
-                  : "Open admin navigation"
               )
             )
         ),
@@ -1645,9 +2173,7 @@ function App() {
               className: "dashboard-hero-back",
               onClick: handleLogoutToHome
             },
-            window.i18n && window.i18n.t
-              ? window.i18n.t(lang, "dashboard_back_home")
-              : "Revenir à la page d'accueil"
+            t(lang, "dashboard_back_home")
           ),
           e(LangSwitcher, {
             lang,
@@ -1658,7 +2184,8 @@ function App() {
       ),
       e(MainMenu, {
         current: mainPage,
-        onChange: setMainPage
+        onChange: setMainPage,
+        lang
       }),
       e(
         "div",
@@ -1687,6 +2214,7 @@ function App() {
             e(ProfileBar, {
               name: profileName,
               avatarUrl: profileAvatar,
+              lang,
               onOpenSettings: null
             }),
             e(BusCard, {
@@ -1717,17 +2245,7 @@ function App() {
               polls,
               onVote: handleVotePoll,
               lang
-            }),
-            e(ModeratorsCard, {
-              role,
-              moderators,
-              error: moderatorsError,
-              onAdd: handleAddModerator,
-              onRemove: handleRemoveModerator,
-              lang
-            }),
-            (role === "admin" || role === "super_admin") &&
-              e(TempUserCreator, { lang })
+            })
           )
       )
     ),
@@ -1739,43 +2257,124 @@ function App() {
       formTitle,
       formDescription,
       formPrice,
+      formDurationDays,
       onChangeField: handleChangeClassifiedField,
       onSubmit: handleCreateClassified,
-      onClose: () => setShowClassifiedsModal(false)
+      isEditing: editingKind === "classifieds",
+      lang,
+      onClose: () => {
+        setShowClassifiedsModal(false);
+        if (editingKind === "classifieds") setEditingPost(null);
+      }
     }),
     e(EventModal, {
       open: showEventModal,
       creating: creatingEvent,
       onSubmit: handleCreateEvent,
-      onClose: () => setShowEventModal(false)
+      initialValues: editingKind === "events" ? editingItem : null,
+      isEditing: editingKind === "events",
+      lang,
+      onClose: () => {
+        setShowEventModal(false);
+        if (editingKind === "events") setEditingPost(null);
+      }
     }),
     e(ReportModal, {
       open: showReportModal,
       creating: creatingReport,
       onSubmit: handleCreateReport,
-      onClose: () => setShowReportModal(false)
+      initialValues: editingKind === "reports" ? editingItem : null,
+      isEditing: editingKind === "reports",
+      lang,
+      onClose: () => {
+        setShowReportModal(false);
+        if (editingKind === "reports") setEditingPost(null);
+      }
     }),
     e(NeighborServiceModal, {
       open: showServiceModal,
       creating: creatingService,
       onSubmit: handleCreateService,
-      onClose: () => setShowServiceModal(false)
+      initialValues: editingKind === "services" ? editingItem : null,
+      isEditing: editingKind === "services",
+      lang,
+      onClose: () => {
+        setShowServiceModal(false);
+        if (editingKind === "services") setEditingPost(null);
+      }
     }),
     e(ShopModal, {
       open: showShopModal,
       shop: selectedShop,
+      lang,
       onClose: () => {
         setShowShopModal(false);
         setSelectedShop(null);
       }
     }),
+    e(ResidenceModal, {
+      open:
+        showResidenceForm &&
+        (role === "admin" || role === "super_admin"),
+      saving: savingResidence,
+      error: residenceError,
+      onSubmit: handleSaveResidence,
+      onClose: () => setShowResidenceForm(false),
+      lang
+    }),
+    e(ResidencePostModal, {
+      open: showResidencePostModal,
+      item: selectedResidencePost,
+      lang,
+      onClose: () => {
+        setShowResidencePostModal(false);
+        setSelectedResidencePost(null);
+      }
+    }),
+    e(ServicePostModal, {
+      open: showServicePostModal,
+      item: selectedServicePost,
+      lang,
+      onClose: () => {
+        setShowServicePostModal(false);
+        setSelectedServicePost(null);
+      }
+    }),
+    e(ReportPostModal, {
+      open: showReportPostModal,
+      item: selectedReportPost,
+      lang,
+      onClose: () => {
+        setShowReportPostModal(false);
+        setSelectedReportPost(null);
+      }
+    }),
+    e(EventPostModal, {
+      open: showEventPostModal,
+      item: selectedEventPost,
+      lang,
+      onClose: () => {
+        setShowEventPostModal(false);
+        setSelectedEventPost(null);
+      }
+    }),
+    e(PollPostModal, {
+      open: showPollPostModal,
+      item: selectedPollPost,
+      lang,
+      onClose: () => {
+        setShowPollPostModal(false);
+        setSelectedPollPost(null);
+      }
+    }),
     e(AddMemberModal, {
       open: showAddMemberModal,
       creating: creatingMember,
+      lang,
       onSubmit: async ({ email, role: roleForNew }) => {
         const emailTrimmed = (email || "").trim();
         if (!emailTrimmed) {
-          alert("Merci de saisir un e-mail pour le nouveau membre.");
+          alert(t(lang, "error_member_email_missing"));
           return;
         }
         const nickname = emailTrimmed.split("@")[0] || emailTrimmed;
@@ -1798,7 +2397,7 @@ function App() {
           if (!res.ok) {
             const errData = await res.json().catch(() => null);
             throw new Error(
-              (errData && errData.error) || "Impossible d'ajouter ce membre."
+              (errData && errData.error) || t(lang, "error_member_create")
             );
           }
           const created = await res.json();
@@ -1807,9 +2406,7 @@ function App() {
         } catch (e) {
           console.error(e);
           setMembersError(
-            e && e.message
-              ? e.message
-              : "Erreur lors de l'ajout du membre."
+            e && e.message ? e.message : t(lang, "error_member_create_generic")
           );
         } finally {
           setCreatingMember(false);
@@ -1821,7 +2418,13 @@ function App() {
       open: showPollModal,
       creating: creatingPoll,
       onSubmit: handleCreatePoll,
-      onClose: () => setShowPollModal(false)
+      initialValues: editingKind === "polls" ? editingItem : null,
+      isEditing: editingKind === "polls",
+      lang,
+      onClose: () => {
+        setShowPollModal(false);
+        if (editingKind === "polls") setEditingPost(null);
+      }
     }),
     e(AnnouncementModal, {
       open: showAnnouncementModal,

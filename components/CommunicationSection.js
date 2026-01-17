@@ -2,10 +2,17 @@
 
 function CommunicationSection(props) {
   const lang = (props && props.lang) || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
   const supabase = window.supabaseClient || null;
   const residentId = (props && props.residentId) || null;
   const profileName = (props && props.profileName) || null;
   const profileAvatar = (props && props.profileAvatar) || null;
+  const locale = lang === "pl" ? "pl-PL" : lang === "en" ? "en-GB" : "fr-FR";
 
   // Nouveau fil de discussion
   const [newTheme, setNewTheme] = React.useState("bug"); // 'bug' | 'design' | 'feature' | 'other'
@@ -72,7 +79,7 @@ function CommunicationSection(props) {
         setError(
           e && e.message
             ? e.message
-            : "Impossible de charger les messages pour le moment."
+            : t(lang, "comm_error_load")
         );
       } finally {
         setLoading(false);
@@ -83,7 +90,7 @@ function CommunicationSection(props) {
   async function handleSubmitNew(ev) {
     ev.preventDefault();
     if (!newMessage.trim()) {
-      setError("Merci de décrire votre question ou suggestion.");
+      setError(t(lang, "comm_error_missing_message"));
       setInfo(null);
       return;
     }
@@ -118,15 +125,13 @@ function CommunicationSection(props) {
       }
 
       setNewMessage("");
-      setInfo(
-        "Votre discussion a été publiée. Merci pour votre retour !"
-      );
+      setInfo(t(lang, "comm_info_posted"));
     } catch (e) {
       console.error("CommunicationSection submit error:", e);
       setError(
         e && e.message
           ? e.message
-          : "Impossible d'enregistrer votre message pour le moment."
+          : t(lang, "comm_error_submit")
       );
     } finally {
       setSending(false);
@@ -136,7 +141,7 @@ function CommunicationSection(props) {
   async function handleSubmitReply(ev) {
     ev.preventDefault();
     if (!replyTo || !replyMessage.trim()) {
-      setError("Merci de saisir une réponse avant d’envoyer.");
+      setError(t(lang, "comm_error_missing_reply"));
       setInfo(null);
       return;
     }
@@ -172,13 +177,13 @@ function CommunicationSection(props) {
 
       setReplyMessage("");
       setReplyTo(null);
-      setInfo("Votre réponse a été publiée.");
+      setInfo(t(lang, "comm_info_reply_posted"));
     } catch (e) {
       console.error("CommunicationSection reply error:", e);
       setError(
         e && e.message
           ? e.message
-          : "Impossible d'enregistrer votre réponse pour le moment."
+          : t(lang, "comm_error_reply")
       );
     } finally {
       setSending(false);
@@ -188,9 +193,7 @@ function CommunicationSection(props) {
   async function handleDelete(node) {
     if (!node || !node.id) return;
     if (
-      !window.confirm(
-        "Supprimer ce message et toutes les réponses associées ?"
-      )
+      !window.confirm(t(lang, "comm_confirm_delete"))
     ) {
       return;
     }
@@ -219,13 +222,13 @@ function CommunicationSection(props) {
         setReplyTo(null);
         setReplyMessage("");
       }
-      setInfo("Le message et ses réponses ont été supprimés.");
+      setInfo(t(lang, "comm_info_deleted"));
     } catch (e) {
       console.error("CommunicationSection delete error:", e);
       setError(
         e && e.message
           ? e.message
-          : "Impossible de supprimer ce message pour le moment."
+          : t(lang, "comm_error_delete")
       );
     } finally {
       setSending(false);
@@ -311,19 +314,14 @@ function CommunicationSection(props) {
       setError(
         e && e.message
           ? e.message
-          : "Impossible d'enregistrer votre vote pour le moment."
+          : t(lang, "comm_error_vote")
       );
     } finally {
       setSending(false);
     }
   }
 
-  const title =
-    lang === "pl"
-      ? "Kontakt / pomysły"
-      : lang === "en"
-      ? "Contact / feedback"
-      : "Contact / suggestions";
+  const title = t(lang, "comm_title");
   const isReply = !!replyTo;
 
   // Organisation simple en fils de discussion : parent_id null = racine
@@ -343,10 +341,18 @@ function CommunicationSection(props) {
     return roots;
   }, [items]);
 
+  function formatTheme(theme) {
+    if (theme === "bug") return t(lang, "comm_theme_bug");
+    if (theme === "design") return t(lang, "comm_theme_design");
+    if (theme === "feature") return t(lang, "comm_theme_feature");
+    if (theme === "other") return t(lang, "comm_theme_other");
+    return theme || "";
+  }
+
   function renderNode(node, depth) {
     const created =
       node.created_at &&
-      new Date(node.created_at).toLocaleString("fr-FR", {
+      new Date(node.created_at).toLocaleString(locale, {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
@@ -376,7 +382,7 @@ function CommunicationSection(props) {
           src:
             node.author_avatar_url ||
             "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=80",
-          alt: node.author_name || "Avatar"
+          alt: node.author_name || t(lang, "comm_avatar_alt")
         }),
         e(
           "div",
@@ -384,12 +390,12 @@ function CommunicationSection(props) {
           e(
             "div",
             { className: "feedback-author-name" },
-            node.author_name || "Résident"
+            node.author_name || t(lang, "comm_author_fallback")
           ),
           e(
             "div",
             { className: "feedback-meta" },
-            "[" + node.theme + "]",
+            "[" + formatTheme(node.theme) + "]",
             created ? " • " + created : ""
           )
         )
@@ -435,7 +441,7 @@ function CommunicationSection(props) {
             setReplyMessage("");
           }
         },
-        "Répondre"
+        t(lang, "comm_reply")
       ),
       node.author_name &&
         profileName &&
@@ -449,7 +455,7 @@ function CommunicationSection(props) {
               handleDelete(node);
             }
           },
-          "Supprimer"
+          t(lang, "comm_delete")
         )
     );
 
@@ -474,7 +480,7 @@ function CommunicationSection(props) {
               onChange: function (ev) {
                 setReplyMessage(ev.target.value);
               },
-              placeholder: "Votre réponse…"
+              placeholder: t(lang, "comm_reply_placeholder")
             }),
             e(
               "div",
@@ -489,7 +495,7 @@ function CommunicationSection(props) {
                     setReplyMessage("");
                   }
                 },
-                "Annuler"
+                t(lang, "comm_reply_cancel")
               ),
               e(
                 "button",
@@ -498,7 +504,9 @@ function CommunicationSection(props) {
                   className: "btn-primary",
                   disabled: sending || !replyMessage.trim()
                 },
-                sending ? "Envoi..." : "Envoyer la réponse"
+                sending
+                  ? t(lang, "comm_reply_sending")
+                  : t(lang, "comm_reply_send")
               )
             )
           )
@@ -535,13 +543,13 @@ function CommunicationSection(props) {
     e(
       "p",
       { className: "page-section-text" },
-      "Cette page vous permet de poser des questions ou de donner votre avis sur le site. Vous pouvez signaler un bug, proposer une idée de design ou suggérer une nouvelle fonctionnalité."
+      t(lang, "comm_intro")
     ),
     // Bloc : démarrer une nouvelle discussion
     e(
       "div",
       { className: "feedback-block-title" },
-      "Démarrer une nouvelle discussion"
+      t(lang, "comm_new_thread_title")
     ),
     e(
       "form",
@@ -555,7 +563,7 @@ function CommunicationSection(props) {
           e(
             "label",
             null,
-            "Thème",
+          t(lang, "comm_theme_label"),
             e(
               "select",
               {
@@ -564,10 +572,10 @@ function CommunicationSection(props) {
                   setNewTheme(ev.target.value);
                 }
               },
-              e("option", { value: "bug" }, "Bug ou problème technique"),
-              e("option", { value: "design" }, "Design / ergonomie"),
-              e("option", { value: "feature" }, "Idée de fonctionnalité"),
-              e("option", { value: "other" }, "Autre")
+            e("option", { value: "bug" }, t(lang, "comm_theme_bug")),
+            e("option", { value: "design" }, t(lang, "comm_theme_design")),
+            e("option", { value: "feature" }, t(lang, "comm_theme_feature")),
+            e("option", { value: "other" }, t(lang, "comm_theme_other"))
             )
           )
         )
@@ -578,15 +586,14 @@ function CommunicationSection(props) {
         e(
           "label",
           null,
-          "Votre message",
+          t(lang, "comm_message_label"),
           e("textarea", {
             rows: 4,
             value: newMessage,
             onChange: function (ev) {
               setNewMessage(ev.target.value);
             },
-            placeholder:
-              "Décrivez le bug, l’idée de design ou la fonctionnalité que vous aimeriez voir…"
+            placeholder: t(lang, "comm_message_placeholder")
           })
         )
       ),
@@ -600,7 +607,7 @@ function CommunicationSection(props) {
             className: "btn-primary",
             disabled: sending
           },
-          sending ? "Envoi en cours..." : "Publier le message"
+          sending ? t(lang, "comm_submit_loading") : t(lang, "comm_submit")
         )
       )
     ),
@@ -609,13 +616,13 @@ function CommunicationSection(props) {
     e(
       "div",
       { className: "feedback-block-title" },
-      "Discussions publiques"
+      t(lang, "comm_public_title")
     ),
     loading &&
       e(
         "div",
         { className: "empty", style: { marginTop: 8 } },
-        "Chargement des messages..."
+        t(lang, "comm_loading")
       ),
     !loading &&
       threads &&

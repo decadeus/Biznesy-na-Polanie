@@ -1,8 +1,23 @@
 // Modal pour création de petit service entre voisins
 
 function NeighborServiceModal(props) {
-  const { open, creating, onSubmit, onClose } = props;
+  const {
+    open,
+    creating,
+    onSubmit,
+    onClose,
+    initialValues,
+    isEditing,
+    lang: rawLang
+  } = props;
   if (!open) return null;
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
 
   return e(
     "div",
@@ -22,7 +37,13 @@ function NeighborServiceModal(props) {
             e(
               "div",
               { className: "line-badge" },
-              e("span", null, "Nouveau service entre voisins")
+              e(
+                "span",
+                null,
+                isEditing
+                  ? t(lang, "service_modal_edit")
+                  : t(lang, "service_modal_new")
+              )
             ),
             e(
               "button",
@@ -40,11 +61,17 @@ function NeighborServiceModal(props) {
                   cursor: "pointer"
                 }
               },
-              "Fermer"
+              t(lang, "modal_close")
             )
           ),
           e("div", { className: "divider" }),
-          e(NeighborServiceForm, { creating, onSubmit })
+          e(NeighborServiceForm, {
+            creating,
+            onSubmit,
+            initialValues,
+            isEditing,
+            lang
+          })
         )
       )
     )

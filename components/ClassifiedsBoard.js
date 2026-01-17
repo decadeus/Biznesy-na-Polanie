@@ -1,7 +1,14 @@
 // Composant ClassifiedsBoard : deux zones de listes (immobilier / diverses)
 
 function ClassifiedsBoard(props) {
-  const { classifieds, classifiedsError, onOpenForm } = props;
+  const { classifieds, classifiedsError, onOpenForm, lang: rawLang } = props;
+  const lang = rawLang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
 
   const immobiliers = classifieds.filter((c) => c.type === "immobilier");
   const divers = classifieds.filter((c) => c.type !== "immobilier");
@@ -47,7 +54,9 @@ function ClassifiedsBoard(props) {
               e(
                 "span",
                 { className: "classified-tag" },
-                item.type === "immobilier" ? "Immobilier" : "Divers"
+                item.type === "immobilier"
+                  ? t(lang, "re_tag")
+                  : t(lang, "classifieds_board_tag_other")
               )
             ),
             e(
@@ -73,11 +82,11 @@ function ClassifiedsBoard(props) {
     e(
       "div",
       { className: "page-section-header" },
-      e("h2", null, "Annonces de la résidence"),
+      e("h2", null, t(lang, "classifieds_board_title")),
       e(
         "p",
         null,
-        "Immobilier, locations, objets à vendre ou à donner entre voisins."
+        t(lang, "classifieds_board_subtitle")
       ),
       e(
         "button",
@@ -86,7 +95,7 @@ function ClassifiedsBoard(props) {
           onClick: onOpenForm,
           className: "page-section-cta"
         },
-        "Publier une annonce"
+        t(lang, "classifieds_board_cta")
       )
     ),
     classifiedsError &&
@@ -104,11 +113,11 @@ function ClassifiedsBoard(props) {
           e(
             "h3",
             { className: "classifieds-column-title" },
-            "Annonces immobilières"
+            t(lang, "classifieds_board_realestate_title")
           ),
         renderList(
           immobiliers,
-          "Aucune annonce immobilière pour le moment."
+          t(lang, "classifieds_board_realestate_empty")
         )
       ),
       e(
@@ -117,11 +126,11 @@ function ClassifiedsBoard(props) {
         e(
           "h3",
           { className: "classifieds-column-title" },
-            "Annonces entre voisins"
+            t(lang, "classifieds_board_neighbors_title")
         ),
         renderList(
           divers,
-          "Aucune annonce d'objet ou diverse pour le moment."
+          t(lang, "classifieds_board_neighbors_empty")
         )
       )
     )

@@ -3,7 +3,15 @@
 function ClassifiedsModal(props) {
   if (!props.open) return null;
 
+  const lang = props.lang || "fr";
+  const t =
+    window.i18n && window.i18n.t
+      ? window.i18n.t
+      : function (_lang, key) {
+          return key;
+        };
   const isImmo = props.formType === "immobilier";
+  const isEditing = !!props.isEditing;
 
   return e(
     "div",
@@ -26,7 +34,11 @@ function ClassifiedsModal(props) {
               e(
                 "span",
                 null,
-                isImmo ? "Nouvelle annonce immobilière" : "Nouvelle annonce entre voisins"
+                isEditing
+                  ? t(lang, "classifieds_modal_edit")
+                  : isImmo
+                  ? t(lang, "classifieds_modal_new_realestate")
+                  : t(lang, "classifieds_modal_new_neighbor")
               )
             ),
             e(
@@ -45,7 +57,7 @@ function ClassifiedsModal(props) {
                   cursor: "pointer"
                 }
               },
-              "Fermer"
+              t(lang, "modal_close")
             )
           ),
           e("div", { className: "divider" }),
