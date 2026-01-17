@@ -631,7 +631,9 @@ function App() {
           .order("created_at", { ascending: false });
         if (error) throw error;
         if (!data || data.length === 0) {
-          throw new Error(t(lang, "error_residence_not_found"));
+          setResidenceItems([]);
+          setResidence(null);
+          return;
         }
         const items = data.map(mapResidenceRow);
         const activeItems = items.filter((item) => item.status === "active");
@@ -1835,7 +1837,7 @@ function App() {
           classifieds,
           authError,
           lang,
-          onFacebookLogin: handleSupabaseFacebookLogin
+          onFacebookLogin: authChecked ? handleSupabaseFacebookLogin : null
         })
       )
     );

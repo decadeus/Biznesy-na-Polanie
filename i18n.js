@@ -482,7 +482,7 @@
       comm_author_fallback: "Résident",
       comm_avatar_alt: "Avatar",
 
-      hero_residence_fallback_name: "Résidence Mały Kack",
+      hero_residence_fallback_name: "Osiedle Mały Kack – Gdynia",
       hero_welcome_prefix: "Bienvenue à",
 
       about_title: "À propos du site – comment ça marche ?",
@@ -1089,7 +1089,7 @@
       comm_author_fallback: "Resident",
       comm_avatar_alt: "Avatar",
 
-      hero_residence_fallback_name: "Mały Kack Residence",
+      hero_residence_fallback_name: "Osiedle Mały Kack – Gdynia",
       hero_welcome_prefix: "Welcome to",
 
       about_title: "About this site – how it works?",
@@ -1702,7 +1702,7 @@
       comm_author_fallback: "Mieszkaniec",
       comm_avatar_alt: "Avatar",
 
-      hero_residence_fallback_name: "Osiedle Mały Kack",
+      hero_residence_fallback_name: "Osiedle Mały Kack – Gdynia",
       hero_welcome_prefix: "Witamy w",
 
       about_title: "O serwisie – jak to działa?",

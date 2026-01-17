@@ -17,9 +17,7 @@ function ResidenceHero(props) {
         : function (_lang, key) {
             return key;
           };
-    const residenceName =
-      (residence && (residence.name || residence.displayName)) ||
-      t(lang, "hero_residence_fallback_name");
+    const residenceName = t(lang, "hero_residence_fallback_name");
 
     return e(
       "div",
