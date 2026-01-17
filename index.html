@@ -33,6 +33,10 @@
       );
     </script>
     <script>
+      // Redirection OAuth en local (override explicite)
+      window.supabaseRedirectTo = "http://localhost:3001/welcome";
+    </script>
+    <script>
       // Liens vers les stores (à renseigner pour activer les boutons)
       window.appDownloadLinks = {
         ios: "",

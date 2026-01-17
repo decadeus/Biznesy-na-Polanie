@@ -192,6 +192,7 @@ function App() {
   const [supabaseUser, setSupabaseUser] = useState(null);
   const [supabaseSessionChecked, setSupabaseSessionChecked] =
     useState(false);
+  const [showPublicHome, setShowPublicHome] = useState(false);
   const [authError, setAuthError] = useState(null);
   const [selectedLine, setSelectedLine] = useState("32");
   const [departures, setDepartures] = useState([]);
@@ -334,18 +335,24 @@ function App() {
     } catch (e) {}
   }, [lang]);
 
+  useEffect(() => {
+    if (!currentUser) {
+      setShowPublicHome(false);
+    }
+  }, [currentUser]);
+
   // Synchronise l'URL avec l'état de connexion :
   // - utilisateur connecté  -> /welcome
   // - non connecté          -> /
   useEffect(() => {
     if (!authChecked) return;
     const path = window.location.pathname;
-    if (currentUser && path !== "/welcome") {
+    if (currentUser && !showPublicHome && path !== "/welcome") {
       window.history.replaceState({}, "", "/welcome");
-    } else if (!currentUser && path === "/welcome") {
+    } else if ((!currentUser || showPublicHome) && path !== "/") {
       window.history.replaceState({}, "", "/");
     }
-  }, [authChecked, currentUser]);
+  }, [authChecked, currentUser, showPublicHome]);
 
   // Si une session Supabase existe, on tente de la synchroniser avec le backend
   useEffect(() => {
@@ -1770,10 +1777,18 @@ function App() {
     }
     try {
       setAuthError(null);
+      const redirectTo =
+        typeof window !== "undefined" &&
+        window.supabaseRedirectTo &&
+        typeof window.supabaseRedirectTo === "string"
+          ? window.supabaseRedirectTo
+          : window.location && window.location.origin
+          ? window.location.origin + "/welcome"
+          : null;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "facebook",
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: redirectTo || undefined,
           scopes: "public_profile" // on ne demande pas l'email pour éviter Invalid Scopes
         }
       });
@@ -1867,6 +1882,16 @@ function App() {
     }
   }
 
+  function handleGoPublicHome() {
+    setShowPublicHome(true);
+    window.history.replaceState({}, "", "/");
+  }
+
+  function handleGoWelcome() {
+    setShowPublicHome(false);
+    window.history.replaceState({}, "", "/welcome");
+  }
+
   if (!authChecked) {
     return e(
       "div",
@@ -1875,8 +1900,8 @@ function App() {
     );
   }
 
-  if (!currentUser) {
-    const publicUser = supabaseUser || null;
+  if (!currentUser || showPublicHome) {
+    const publicUser = currentUser || supabaseUser || null;
     const publicUserName =
       (publicUser && (publicUser.name || publicUser.full_name)) ||
       (publicUser &&
@@ -1951,7 +1976,9 @@ function App() {
               {
                 type: "button",
                 className: "public-topbar-welcome-btn",
-                onClick: handleResumeSessionToWelcome
+                onClick: currentUser
+                  ? handleGoWelcome
+                  : handleResumeSessionToWelcome
               },
               t(lang, "public_go_welcome")
             )
@@ -2304,7 +2331,7 @@ function App() {
             {
               type: "button",
               className: "dashboard-hero-back",
-              onClick: handleLogoutToHome
+              onClick: handleGoPublicHome
             },
             t(lang, "dashboard_back_home")
           ),
