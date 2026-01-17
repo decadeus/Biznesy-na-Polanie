@@ -132,3 +132,67 @@ create table if not exists public.neighbor_services (
   image_url   text
 );
 
+-- 5.6 Feedback / contact (bugs, design, idées de fonctionnalités)
+create table if not exists public.feedback (
+  id          bigint generated always as identity primary key,
+  resident_id uuid references public.residents(id),
+  author_name text,
+  author_avatar_url text,
+  theme       text not null,    -- 'bug' | 'design' | 'feature' | 'other'
+  message     text not null,
+  created_at  timestamptz default now()
+);
+
+alter table public.feedback
+  add column if not exists parent_id bigint;
+
+-- S'assurer que la contrainte de clé étrangère utilise ON DELETE CASCADE
+alter table public.feedback
+  drop constraint if exists feedback_parent_id_fkey;
+
+alter table public.feedback
+  add constraint feedback_parent_id_fkey
+  foreign key (parent_id) references public.feedback(id) on delete cascade;
+
+alter table public.feedback enable row level security;
+
+drop policy if exists "feedback_select_all" on public.feedback;
+create policy "feedback_select_all"
+on public.feedback
+for select
+using (true);
+
+drop policy if exists "feedback_insert_all" on public.feedback;
+create policy "feedback_insert_all"
+on public.feedback
+for insert
+with check (true);
+
+drop policy if exists "feedback_delete_all" on public.feedback;
+create policy "feedback_delete_all"
+on public.feedback
+for delete
+using (true);
+
+-- 5.6bis Votes sur les feedback (like / dislike)
+create table if not exists public.feedback_votes (
+  id           bigint generated always as identity primary key,
+  feedback_id  bigint not null references public.feedback(id) on delete cascade,
+  resident_key text not null,
+  value        smallint not null check (value in (-1, 1)),
+  created_at   timestamptz default now()
+);
+
+create unique index if not exists feedback_votes_unique
+on public.feedback_votes(feedback_id, resident_key);
+
+alter table public.feedback_votes enable row level security;
+
+-- Politique très ouverte pour la démo : tout le monde peut lire / écrire / supprimer
+drop policy if exists "feedback_votes_all" on public.feedback_votes;
+create policy "feedback_votes_all"
+on public.feedback_votes
+for all
+using (true)
+with check (true);
+

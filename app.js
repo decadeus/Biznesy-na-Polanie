@@ -151,6 +151,173 @@ function SectionsQuickNav(props) {
   );
 }
 
+// Composant temporaire pour créer des utilisateurs Supabase (email / mot de passe)
+function TempUserCreator(props) {
+  const supabase = window.supabaseClient || null;
+  const lang = props.lang || "fr";
+
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState(null);
+  const [info, setInfo] = React.useState(null);
+
+  if (!supabase) return null;
+
+  async function handleSubmit(ev) {
+    ev.preventDefault();
+    if (!email || !password) {
+      setError("Merci de saisir un email et un mot de passe.");
+      setInfo(null);
+      return;
+    }
+    try {
+      setLoading(true);
+      setError(null);
+      setInfo(null);
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password
+      });
+      if (signUpError) throw signUpError;
+      setInfo(
+        data && data.user
+          ? "Utilisateur créé avec succès dans Supabase."
+          : "Requête envoyée. Vérifiez dans l'onglet Auth de Supabase."
+      );
+      setEmail("");
+      setPassword("");
+    } catch (e) {
+      console.error("TempUserCreator signUp error:", e);
+      setError(e && e.message ? e.message : "Erreur lors de la création.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const title =
+    lang === "pl"
+      ? "Dodaj użytkownika (demo)"
+      : lang === "en"
+      ? "Add user (demo)"
+      : "Ajouter un utilisateur (démo)";
+
+  return e(
+    "div",
+    { className: "card card-wrapper" },
+    e(
+      "div",
+      { className: "card-content" },
+      e(
+        "div",
+        { className: "header" },
+        e(
+          "div",
+          { className: "line-badge" },
+          e("span", null, title)
+        )
+      ),
+      e(
+        "form",
+        { className: "classified-form", onSubmit: handleSubmit },
+        e(
+          "div",
+          { className: "classified-form-row" },
+          e(
+            "div",
+            { className: "classified-form-col" },
+            e(
+              "label",
+              null,
+              "Email",
+              e("input", {
+                type: "email",
+                value: email,
+                onChange: function (ev) {
+                  setEmail(ev.target.value);
+                },
+                required: true
+              })
+            )
+          ),
+          e(
+            "div",
+            { className: "classified-form-col" },
+            e(
+              "label",
+              null,
+              "Mot de passe",
+              e("input", {
+                type: "password",
+                value: password,
+                onChange: function (ev) {
+                  setPassword(ev.target.value);
+                },
+                required: true
+              })
+            )
+          )
+        ),
+        e(
+          "div",
+          { className: "classified-form-submit" },
+          e(
+            "button",
+            {
+              type: "submit",
+              className: "btn-primary",
+              disabled: loading
+            },
+            loading ? "Création..." : "Créer l'utilisateur"
+          )
+        ),
+        error &&
+          e(
+            "div",
+            { className: "form-error" },
+            error
+          ),
+        info &&
+          e(
+            "div",
+            { className: "form-success" },
+            info
+          )
+      )
+    )
+  );
+}
+
+// Menu principal pour basculer entre les pages (accueil / à propos / communication)
+function MainMenu(props) {
+  const current = props.current || "home";
+  const onChange = props.onChange || function () {};
+
+  function btn(key, label) {
+    const active = current === key;
+    return e(
+      "button",
+      {
+        type: "button",
+        className:
+          "main-menu-btn" + (active ? " main-menu-btn-active" : ""),
+        onClick: function () {
+          if (!active) onChange(key);
+        }
+      },
+      label
+    );
+  }
+
+  return e(
+    "div",
+    { className: "main-menu" },
+    btn("home", "Accueil"),
+    btn("about", "Infos sur le site"),
+    btn("feedback", "Contact / idées")
+  );
+}
+
 function App() {
   const supabase = window.supabaseClient || null;
   const [now, setNow] = useState(new Date());
@@ -229,6 +396,7 @@ function App() {
     // Par défaut, on démarre le site en polonais pour les résidents
     return "pl";
   });
+  const [mainPage, setMainPage] = useState("home"); // "home" | "about" | "feedback"
   const isDevEnv =
     typeof window !== "undefined" &&
     (window.location.hostname === "localhost" ||
@@ -418,12 +586,27 @@ function App() {
         if (supabase) {
           const { data, error } = await supabase
             .from("classifieds")
-            .select("*");
+            .select(
+              "*, resident:resident_id(display_name, avatar_url, role)"
+            );
           if (error) throw error;
           const items = Array.isArray(data)
             ? data.map(function (row) {
                 return Object.assign({}, row, {
-                  imageUrl: row.image_url || row.imageUrl || null
+                  imageUrl: row.image_url || row.imageUrl || null,
+                  authorName:
+                    row.resident && row.resident.display_name
+                      ? row.resident.display_name
+                      : row.authorName || null,
+                  authorAvatarUrl:
+                    row.resident && row.resident.avatar_url
+                      ? row.resident.avatar_url
+                      : row.authorAvatarUrl || null,
+                  authorRole:
+                    row.resident && row.resident.role
+                      ? row.resident.role
+                      : row.authorRole || null,
+                  createdAt: row.created_at || row.createdAt || null
                 });
               })
             : [];
@@ -474,12 +657,29 @@ function App() {
       try {
         setEventsError(null);
         if (supabase) {
-          const { data, error } = await supabase.from("events").select("*");
+          const { data, error } = await supabase
+            .from("events")
+            .select(
+              "*, resident:resident_id(display_name, avatar_url, role)"
+            );
           if (error) throw error;
           const items = Array.isArray(data)
             ? data.map(function (row) {
                 return Object.assign({}, row, {
-                  imageUrl: row.image_url || row.imageUrl || null
+                  imageUrl: row.image_url || row.imageUrl || null,
+                  authorName:
+                    row.resident && row.resident.display_name
+                      ? row.resident.display_name
+                      : row.authorName || null,
+                  authorAvatarUrl:
+                    row.resident && row.resident.avatar_url
+                      ? row.resident.avatar_url
+                      : row.authorAvatarUrl || null,
+                  authorRole:
+                    row.resident && row.resident.role
+                      ? row.resident.role
+                      : row.authorRole || null,
+                  createdAt: row.created_at || row.createdAt || null
                 });
               })
             : [];
@@ -502,12 +702,29 @@ function App() {
       try {
         setReportsError(null);
         if (supabase) {
-          const { data, error } = await supabase.from("reports").select("*");
+          const { data, error } = await supabase
+            .from("reports")
+            .select(
+              "*, resident:resident_id(display_name, avatar_url, role)"
+            );
           if (error) throw error;
           const items = Array.isArray(data)
             ? data.map(function (row) {
                 return Object.assign({}, row, {
-                  imageUrl: row.image_url || row.imageUrl || null
+                  imageUrl: row.image_url || row.imageUrl || null,
+                  authorName:
+                    row.resident && row.resident.display_name
+                      ? row.resident.display_name
+                      : row.authorName || null,
+                  authorAvatarUrl:
+                    row.resident && row.resident.avatar_url
+                      ? row.resident.avatar_url
+                      : row.authorAvatarUrl || null,
+                  authorRole:
+                    row.resident && row.resident.role
+                      ? row.resident.role
+                      : row.authorRole || null,
+                  createdAt: row.created_at || row.createdAt || null
                 });
               })
             : [];
@@ -532,12 +749,27 @@ function App() {
         if (supabase) {
           const { data, error } = await supabase
             .from("neighbor_services")
-            .select("*");
+            .select(
+              "*, resident:resident_id(display_name, avatar_url, role)"
+            );
           if (error) throw error;
           const items = Array.isArray(data)
             ? data.map(function (row) {
                 return Object.assign({}, row, {
-                  imageUrl: row.image_url || row.imageUrl || null
+                  imageUrl: row.image_url || row.imageUrl || null,
+                  authorName:
+                    row.resident && row.resident.display_name
+                      ? row.resident.display_name
+                      : row.authorName || null,
+                  authorAvatarUrl:
+                    row.resident && row.resident.avatar_url
+                      ? row.resident.avatar_url
+                      : row.authorAvatarUrl || null,
+                  authorRole:
+                    row.resident && row.resident.role
+                      ? row.resident.role
+                      : row.authorRole || null,
+                  createdAt: row.created_at || row.createdAt || null
                 });
               })
             : [];
@@ -1144,35 +1376,9 @@ function App() {
     return e(
       React.Fragment,
       null,
-        e(
-          "div",
-          { className: "public-topbar" },
-        e(
-          "div",
-          { className: "public-topbar-left" },
-          e(
-            "button",
-            {
-              type: "button",
-              className: "public-topbar-link",
-              onClick: handleSupabaseFacebookLogin
-            },
-            window.i18n && window.i18n.t
-              ? window.i18n.t(lang, "topbar_login_fb")
-              : "Se connecter avec Facebook"
-          ),
-          e(
-            "button",
-            {
-              type: "button",
-              className: "public-topbar-link",
-              onClick: handleDevLogin
-            },
-            window.i18n && window.i18n.t
-              ? window.i18n.t(lang, "topbar_dev_access")
-              : "Accès temporaire"
-          )
-        ),
+      e(
+        "div",
+        { className: "public-topbar" },
         e(LangSwitcher, {
           lang,
           onChange: setLang
@@ -1186,12 +1392,8 @@ function App() {
           residenceError,
           classifieds,
           authError,
-          lang
-        }),
-        e(ClassifiedsRealEstate, {
-          classifieds,
-          classifiedsError,
-          lang
+          lang,
+          onFacebookLogin: handleSupabaseFacebookLogin
         })
       )
     );
@@ -1276,64 +1478,10 @@ function App() {
   // on n'affiche pas la colonne de droite (bus, météo, etc.).
   const showRightColumn = !(isStaff && showAdminNav);
 
-  const leftContent =
-    effectiveAdminView === "dashboard"
-      ? e(
-          "div",
-          { className: "page-sections" },
-          e(SectionsQuickNav, { lang }),
-          e(ResidenceCard, {
-            residence,
-            residenceError,
-            lang
-          }),
-          e(ClassifiedsRealEstate, {
-            classifieds,
-            classifiedsError,
-            onOpenForm: () => {
-              setFormType("immobilier");
-              setShowClassifiedsModal(true);
-            },
-            onSelect: (item) => {
-              setSelectedAnnouncement(item);
-              setShowAnnouncementModal(true);
-            },
-            lang
-          }),
-          e(ClassifiedsNeighbors, {
-            classifieds,
-            classifiedsError,
-            onOpenForm: () => {
-              setFormType("objet");
-              setShowClassifiedsModal(true);
-            },
-            onSelect: (item) => {
-              setSelectedAnnouncement(item);
-              setShowAnnouncementModal(true);
-            },
-            lang
-          }),
-          // Section commerçants détaillée retirée pour garder la version compacte dans la colonne de droite
-          e(EventsSection, {
-            events,
-            eventsError,
-            onOpenForm: () => setShowEventModal(true),
-            lang
-          }),
-          e(NeighborServicesSection, {
-            services,
-            servicesError,
-            onOpenForm: () => setShowServiceModal(true),
-            lang
-          }),
-          e(ReportsSection, {
-            reports,
-            reportsError,
-            onOpenForm: () => setShowReportModal(true),
-            lang
-          })
-        )
-      : effectiveAdminView === "members"
+  let leftContent;
+  if (effectiveAdminView !== "dashboard") {
+    leftContent =
+      effectiveAdminView === "members"
       ? e(
           "div",
           { className: "page-sections" },
@@ -1369,6 +1517,69 @@ function App() {
             classifieds
           })
         );
+  } else {
+    // Vue dashboard : on bascule en fonction de mainPage (home / about / feedback)
+    if (mainPage === "about") {
+      leftContent = e(
+        "div",
+        { className: "page-sections" },
+        e(AboutSiteSection, { lang })
+      );
+    } else if (mainPage === "feedback") {
+      leftContent = e(
+        "div",
+        { className: "page-sections" },
+        e(CommunicationSection, {
+          lang,
+          residentId,
+          profileName,
+          profileAvatar
+        })
+      );
+    } else {
+      leftContent = e(
+        "div",
+        { className: "page-sections" },
+        e(SectionsQuickNav, { lang }),
+        e(ResidenceCard, {
+          residence,
+          residenceError,
+          lang
+        }),
+        e(ClassifiedsNeighbors, {
+          classifieds,
+          classifiedsError,
+          onOpenForm: () => {
+            setFormType("objet");
+            setShowClassifiedsModal(true);
+          },
+          onSelect: (item) => {
+            setSelectedAnnouncement(item);
+            setShowAnnouncementModal(true);
+          },
+          lang
+        }),
+        e(EventsSection, {
+          events,
+          eventsError,
+          onOpenForm: () => setShowEventModal(true),
+          lang
+        }),
+        e(NeighborServicesSection, {
+          services,
+          servicesError,
+          onOpenForm: () => setShowServiceModal(true),
+          lang
+        }),
+        e(ReportsSection, {
+          reports,
+          reportsError,
+          onOpenForm: () => setShowReportModal(true),
+          lang
+        })
+      );
+    }
+  }
 
   return e(
     React.Fragment,
@@ -1445,6 +1656,10 @@ function App() {
           })
         )
       ),
+      e(MainMenu, {
+        current: mainPage,
+        onChange: setMainPage
+      }),
       e(
         "div",
         { className: "dashboard-main" },
@@ -1510,7 +1725,9 @@ function App() {
               onAdd: handleAddModerator,
               onRemove: handleRemoveModerator,
               lang
-            })
+            }),
+            (role === "admin" || role === "super_admin") &&
+              e(TempUserCreator, { lang })
           )
       )
     ),
