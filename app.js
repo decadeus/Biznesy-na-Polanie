@@ -415,6 +415,21 @@ function App() {
     async function loadClassifieds() {
       try {
         setClassifiedsError(null);
+        if (supabase) {
+          const { data, error } = await supabase
+            .from("classifieds")
+            .select("*");
+          if (error) throw error;
+          const items = Array.isArray(data)
+            ? data.map(function (row) {
+                return Object.assign({}, row, {
+                  imageUrl: row.image_url || row.imageUrl || null
+                });
+              })
+            : [];
+          setClassifieds(items);
+          return;
+        }
         const res = await fetch("/api/classifieds");
         if (!res.ok) {
           throw new Error("Impossible de charger les annonces");
@@ -430,6 +445,19 @@ function App() {
     async function loadShops() {
       try {
         setShopsError(null);
+        if (supabase) {
+          const { data, error } = await supabase.from("shops").select("*");
+          if (error) throw error;
+          const items = Array.isArray(data)
+            ? data.map(function (row) {
+                return Object.assign({}, row, {
+                  imageUrl: row.image_url || row.imageUrl || null
+                });
+              })
+            : [];
+          setShops(items);
+          return;
+        }
         const res = await fetch("/api/shops");
         if (!res.ok) {
           throw new Error("Impossible de charger les commerçants");
@@ -445,6 +473,19 @@ function App() {
     async function loadEvents() {
       try {
         setEventsError(null);
+        if (supabase) {
+          const { data, error } = await supabase.from("events").select("*");
+          if (error) throw error;
+          const items = Array.isArray(data)
+            ? data.map(function (row) {
+                return Object.assign({}, row, {
+                  imageUrl: row.image_url || row.imageUrl || null
+                });
+              })
+            : [];
+          setEvents(items);
+          return;
+        }
         const res = await fetch("/api/events");
         if (!res.ok) {
           throw new Error("Impossible de charger les événements");
@@ -460,6 +501,19 @@ function App() {
     async function loadReports() {
       try {
         setReportsError(null);
+        if (supabase) {
+          const { data, error } = await supabase.from("reports").select("*");
+          if (error) throw error;
+          const items = Array.isArray(data)
+            ? data.map(function (row) {
+                return Object.assign({}, row, {
+                  imageUrl: row.image_url || row.imageUrl || null
+                });
+              })
+            : [];
+          setReports(items);
+          return;
+        }
         const res = await fetch("/api/reports");
         if (!res.ok) {
           throw new Error("Impossible de charger les signalements");
@@ -475,6 +529,21 @@ function App() {
     async function loadServices() {
       try {
         setServicesError(null);
+        if (supabase) {
+          const { data, error } = await supabase
+            .from("neighbor_services")
+            .select("*");
+          if (error) throw error;
+          const items = Array.isArray(data)
+            ? data.map(function (row) {
+                return Object.assign({}, row, {
+                  imageUrl: row.image_url || row.imageUrl || null
+                });
+              })
+            : [];
+          setServices(items);
+          return;
+        }
         const res = await fetch("/api/services");
         if (!res.ok) {
           throw new Error("Impossible de charger les services entre voisins");
