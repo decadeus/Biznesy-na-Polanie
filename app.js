@@ -503,11 +503,7 @@ function App() {
   useEffect(() => {
     if (!currentUser) return;
     const defaultName = t(lang, "profile_default_name");
-    setProfileName((prev) =>
-      prev && prev !== defaultName
-        ? prev
-        : currentUser.name || defaultName
-    );
+    setProfileName(currentUser.name || defaultName);
     // Toujours privilégier la vraie photo de profil renvoyée par le backend
     // (Supabase / Facebook). Si elle n'existe pas, on garde un fallback.
     setProfileAvatar(
