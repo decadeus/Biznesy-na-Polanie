@@ -172,8 +172,8 @@ body {
   padding: 22px 26px;
   background-image: linear-gradient(
       to bottom right,
-      rgba(15, 23, 42, 0.15),
-      rgba(15, 23, 42, 0.55)
+      rgba(0, 0, 0, 0.45),
+      rgba(0, 0, 0, 0.7)
     ),
     url("https://images.pexels.com/photos/323780/pexels-photo-323780.jpeg?auto=compress&cs=tinysrgb&w=1600");
   background-size: cover;
@@ -301,6 +301,29 @@ body {
   background-position: center;
   background-color: #e5e7ec;
   border: 2px solid #d1d5db;
+}
+
+.dashboard-hero-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.dashboard-hero-user .profile-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  background-size: cover;
+  background-position: center;
+  border: 3px solid #ffffff;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.18);
+}
+
+.dashboard-hero-user-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
 }
 
 .profile-fields {
@@ -1609,6 +1632,7 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
+  padding: 10px;
 }
 
 .header {
@@ -1847,7 +1871,7 @@ body {
 }
 
 .page-section-text {
-  font-size: 13px;
+  font-size: 18px;
   color: #4b5563;
 }
 
@@ -2629,7 +2653,7 @@ body {
 }
 
 .classified-text {
-  font-size: 12px;
+  font-size: 14px;
   color: #4b5563;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -2813,7 +2837,7 @@ body {
 }
 
 .announcement-text {
-  font-size: 13px;
+  font-size: 14px;
   color: #1f2937;
   line-height: 1.5;
 }

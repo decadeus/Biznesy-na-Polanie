@@ -33,12 +33,7 @@ function ProfileBar(props) {
       ),
       null
     ),
-    e(
-      "div",
-      { className: "profile-users" },
-      e("span", { className: "profile-users-count" }, "235"),
-      " " + t(lang, "profile_members_label")
-    )
+    null
   );
 }
 

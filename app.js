@@ -2528,6 +2528,21 @@ function App() {
           ),
           e(
             "div",
+            { className: "dashboard-hero-user" },
+            e("div", {
+              className: "profile-avatar",
+              style: {
+                backgroundImage: "url(" + profileAvatar + ")"
+              }
+            }),
+            e(
+              "div",
+              { className: "dashboard-hero-user-name" },
+              profileName
+            )
+          ),
+          e(
+            "div",
             { className: "dashboard-hero-subtitle" },
             t(lang, "dashboard_hero_subtitle")
             ),
@@ -2601,12 +2616,6 @@ function App() {
           e(
             "div",
             { className: "dashboard-main-right" },
-            e(ProfileBar, {
-              name: profileName,
-              avatarUrl: profileAvatar,
-              lang,
-              onOpenSettings: null
-            }),
             e(BusCard, {
               now,
               selectedLine,
