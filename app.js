@@ -1983,9 +1983,21 @@ function App() {
       }
     } catch (e) {
       console.error("Erreur login Supabase/Facebook:", e);
+      const message = e && e.message ? e.message : "";
+      const lower = message.toLowerCase();
+      const isAppInactive =
+        lower.includes("aplikacja nieaktywna") ||
+        lower.includes("aplikacja nie jest teraz dost") ||
+        lower.includes("app not active") ||
+        lower.includes("application not active") ||
+        lower.includes("app is currently unavailable") ||
+        lower.includes("application is not available") ||
+        lower.includes("app inactive");
       setAuthError(
-        e && e.message
-          ? e.message
+        isAppInactive
+          ? t(lang, "error_fb_app_inactive")
+          : message
+          ? message
           : t(lang, "error_fb_login_start")
       );
     }

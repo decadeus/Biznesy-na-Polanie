@@ -399,6 +399,8 @@
         "Impossible d'activer l'accès temporaire pour le moment.",
       error_fb_login_start:
         "Impossible de démarrer la connexion Facebook pour le moment.",
+      error_fb_app_inactive:
+        "L'application Facebook est inactive. Activez-la dans Meta for Developers ou utilisez la connexion par URL de profil.",
       error_fb_profile_check:
         "Impossible de vérifier votre profil Facebook pour le moment.",
       alert_fb_profile_url_missing:
@@ -1029,6 +1031,8 @@
         "Temporary access cannot be enabled right now.",
       error_fb_login_start:
         "Unable to start Facebook login right now.",
+      error_fb_app_inactive:
+        "The Facebook app is inactive. Activate it in Meta for Developers or use profile URL login.",
       error_fb_profile_check:
         "Unable to verify your Facebook profile right now.",
       alert_fb_profile_url_missing:
@@ -1656,6 +1660,8 @@
         "Tymczasowy dostęp nie może być teraz włączony.",
       error_fb_login_start:
         "Nie można teraz rozpocząć logowania przez Facebooka.",
+      error_fb_app_inactive:
+        "Aplikacja Facebook jest nieaktywna. Aktywuj ją w Meta for Developers lub użyj logowania przez URL profilu.",
       error_fb_profile_check:
         "Nie można teraz zweryfikować profilu na Facebooku.",
       alert_fb_profile_url_missing:
