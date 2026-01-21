@@ -2205,7 +2205,8 @@ function App() {
           lang,
           onFacebookLogin: shouldShowFacebookButton
             ? handleSupabaseFacebookLogin
-            : null
+            : null,
+          onProfileUrlLogin: handleProfileUrlLogin
         })
       ),
       e(

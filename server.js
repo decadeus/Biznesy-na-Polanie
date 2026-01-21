@@ -47,23 +47,30 @@ let sessions = {};
 let users = [];
 let nextUserId = 1;
 
-// Simulation : 23 demandes de validation de compte déjà en attente
-(() => {
-  const now = new Date().toISOString();
-  for (let i = 1; i <= 23; i++) {
-    users.push({
-      id: nextUserId++,
-      supabaseUserId: null,
-      name: "Demande " + i,
-      avatarUrl: null,
-      facebookProfileUrl: null,
-      status: "pending",
-      role: "resident",
-      createdAt: now,
-      lastLoginAt: now
+// Pas de données de démonstration par défaut : on liste uniquement
+// les vraies demandes envoyées via le formulaire d'onboarding.
+
+async function syncLocalResident(user, overrides = {}) {
+  if (!supabaseAdmin || !user) return;
+  try {
+    const payload = {
+      id: Number(user.id),
+      display_name: user.name || "Résident",
+      avatar_url: user.avatarUrl || null,
+      facebook_profile_url: user.facebookProfileUrl || null,
+      status: user.status || "pending",
+      role: user.role || "resident",
+      created_at: user.createdAt || new Date().toISOString(),
+      last_login_at: user.lastLoginAt || null,
+      ...overrides
+    };
+    await supabaseAdmin.from("local_residents").upsert(payload, {
+      onConflict: "id"
     });
+  } catch (err) {
+    console.error("Sync local_residents error:", err.message || err);
   }
-})();
+}
 
 function parseCookies(req) {
   const header = req.headers.cookie;
@@ -240,6 +247,9 @@ app.post("/api/onboarding/complete", (req, res) => {
       lastLoginAt: null
     };
     users.push(newUser);
+    syncLocalResident(newUser, {
+      group_name: groupName.trim()
+    });
     createSession(res, newUser.id);
     return res.json({
       ok: true,
@@ -269,6 +279,11 @@ app.post("/api/onboarding/complete", (req, res) => {
   if (name && typeof name === "string" && name.trim()) {
     user.name = name.trim().slice(0, 160);
   }
+
+  syncLocalResident(user, {
+    group_name: groupName.trim(),
+    approved_at: autoApprove ? new Date().toISOString() : null
+  });
 
   return res.json({
     ok: true,
@@ -487,45 +502,134 @@ app.post("/auth/dev-login", (req, res) => {
 
 // Espace modérateur : gestion des comptes en attente
 app.get("/api/admin/pending-users", requireModerator, (req, res) => {
-  const pending = users
-    .filter((u) => u.status === "pending")
-    .map((u) => ({
-      id: u.id,
-      name: u.name,
-      avatarUrl: u.avatarUrl,
-      facebookProfileUrl: u.facebookProfileUrl || null,
-      createdAt: u.createdAt
-    }));
-  res.json({ items: pending });
+  if (!supabaseAdmin) {
+    const pending = users
+      .filter((u) => u.status === "pending")
+      .map((u) => ({
+        id: u.id,
+        name: u.name,
+        avatarUrl: u.avatarUrl,
+        facebookProfileUrl: u.facebookProfileUrl || null,
+        createdAt: u.createdAt
+      }));
+    return res.json({ items: pending });
+  }
+  supabaseAdmin
+    .from("local_residents")
+    .select("*")
+    .eq("status", "pending")
+    .order("created_at", { ascending: true })
+    .then(({ data, error }) => {
+      if (error) {
+        console.error("Erreur chargement local_residents:", error.message);
+        const pending = users
+          .filter((u) => u.status === "pending")
+          .map((u) => ({
+            id: u.id,
+            name: u.name,
+            avatarUrl: u.avatarUrl,
+            facebookProfileUrl: u.facebookProfileUrl || null,
+            createdAt: u.createdAt
+          }));
+        return res.json({ items: pending });
+      }
+      const mapped = (data || []).map((row) => ({
+        id: row.id,
+        name: row.display_name || "Résident",
+        avatarUrl: row.avatar_url || null,
+        facebookProfileUrl: row.facebook_profile_url || null,
+        createdAt: row.created_at
+      }));
+      return res.json({ items: mapped });
+    })
+    .catch((err) => {
+      console.error("Erreur chargement local_residents:", err);
+      const pending = users
+        .filter((u) => u.status === "pending")
+        .map((u) => ({
+          id: u.id,
+          name: u.name,
+          avatarUrl: u.avatarUrl,
+          facebookProfileUrl: u.facebookProfileUrl || null,
+          createdAt: u.createdAt
+        }));
+      return res.json({ items: pending });
+    });
 });
 
 app.post("/api/admin/users/:id/approve", requireModerator, (req, res) => {
   const id = Number(req.params.id);
-  const user = users.find((u) => u.id === id);
-  if (!user) {
+  const user = users.find((u) => Number(u.id) === id);
+  if (user) {
+    user.status = "active";
+    user.lastLoginAt = new Date().toISOString();
+    syncLocalResident(user, { approved_at: user.lastLoginAt });
+    return res.json(toPublicUser(user));
+  }
+  if (!supabaseAdmin) {
     return res.status(404).json({ error: "Utilisateur introuvable." });
   }
-  user.status = "active";
-  user.lastLoginAt = new Date().toISOString();
-  res.json(toPublicUser(user));
+  supabaseAdmin
+    .from("local_residents")
+    .update({ status: "active", approved_at: new Date().toISOString() })
+    .eq("id", id)
+    .select("*")
+    .single()
+    .then(({ data, error }) => {
+      if (error || !data) {
+        return res.status(404).json({ error: "Utilisateur introuvable." });
+      }
+      return res.json({
+        id: data.id,
+        name: data.display_name || "Résident",
+        avatarUrl: data.avatar_url || null,
+        facebookProfileUrl: data.facebook_profile_url || null,
+        status: data.status || "active",
+        role: data.role || "resident"
+      });
+    })
+    .catch(() => res.status(404).json({ error: "Utilisateur introuvable." }));
 });
 
 app.post("/api/admin/users/:id/reject", requireModerator, (req, res) => {
   const id = Number(req.params.id);
-  const user = users.find((u) => u.id === id);
-  if (!user) {
+  const user = users.find((u) => Number(u.id) === id);
+  if (user) {
+    user.status = "blocked";
+
+    // Optionnel : invalider les sessions actives de cet utilisateur
+    Object.keys(sessions).forEach((token) => {
+      if (sessions[token].userId === user.id) {
+        delete sessions[token];
+      }
+    });
+
+    syncLocalResident(user, { blocked_at: new Date().toISOString() });
+    return res.json(toPublicUser(user));
+  }
+  if (!supabaseAdmin) {
     return res.status(404).json({ error: "Utilisateur introuvable." });
   }
-  user.status = "blocked";
-
-  // Optionnel : invalider les sessions actives de cet utilisateur
-  Object.keys(sessions).forEach((token) => {
-    if (sessions[token].userId === user.id) {
-      delete sessions[token];
-    }
-  });
-
-  res.json(toPublicUser(user));
+  supabaseAdmin
+    .from("local_residents")
+    .update({ status: "blocked", blocked_at: new Date().toISOString() })
+    .eq("id", id)
+    .select("*")
+    .single()
+    .then(({ data, error }) => {
+      if (error || !data) {
+        return res.status(404).json({ error: "Utilisateur introuvable." });
+      }
+      return res.json({
+        id: data.id,
+        name: data.display_name || "Résident",
+        avatarUrl: data.avatar_url || null,
+        facebookProfileUrl: data.facebook_profile_url || null,
+        status: data.status || "blocked",
+        role: data.role || "resident"
+      });
+    })
+    .catch(() => res.status(404).json({ error: "Utilisateur introuvable." }));
 });
 
 // --- Routes locales pour la résidence et les commerces ---
@@ -534,10 +638,18 @@ app.post("/api/admin/users/:id/reject", requireModerator, (req, res) => {
 app.get("/api/members", async (req, res) => {
   try {
     if (!supabaseAdmin) {
-      return res.status(500).json({
-        error:
-          "Supabase n'est pas configuré côté serveur (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY manquants)."
-      });
+      const localItems = (users || []).map((u) => ({
+        id: u.id,
+        nickname: u.name || "Résident",
+        email: null,
+        avatarUrl:
+          u.avatarUrl ||
+          avatarPool[Math.floor(Math.random() * avatarPool.length)],
+        role: u.role || "resident",
+        facebookProfileUrl: u.facebookProfileUrl || null,
+        status: u.status || "pending"
+      }));
+      return res.json({ items: localItems });
     }
 
     const { data, error } = await supabaseAdmin
@@ -564,7 +676,26 @@ app.get("/api/members", async (req, res) => {
       status: row.status || "pending"
     }));
 
-    res.json({ items: realItems });
+    const { data: localData, error: localError } = await supabaseAdmin
+      .from("local_residents")
+      .select("*")
+      .order("created_at", { ascending: true });
+    if (localError) {
+      console.error("Erreur chargement local_residents:", localError.message);
+    }
+    const localItems = (localData || []).map((row) => ({
+      id: row.id,
+      nickname: row.display_name || "Résident",
+      email: null,
+      avatarUrl:
+        row.avatar_url ||
+        avatarPool[Math.floor(Math.random() * avatarPool.length)],
+      role: row.role || "resident",
+      facebookProfileUrl: row.facebook_profile_url || null,
+      status: row.status || "pending"
+    }));
+
+    res.json({ items: realItems.concat(localItems) });
   } catch (e) {
     console.error("Erreur /api/members:", e);
     res

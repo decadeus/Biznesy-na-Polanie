@@ -41,6 +41,25 @@ create table public.residents (
 
 comment on table public.residents is 'Infos des résidents liées à auth.users (statut, rôle, profil FB).';
 
+-- 2b) Table pour les comptes locaux (sans auth.users)
+create table public.local_residents (
+  id bigint primary key,
+  display_name text,
+  avatar_url text,
+  facebook_profile_url text,
+  status resident_status not null default 'pending',
+  role resident_role not null default 'resident',
+  group_name text,
+  created_at timestamptz not null default now(),
+  last_login_at timestamptz,
+  approved_at timestamptz,
+  approved_by text,
+  blocked_at timestamptz,
+  blocked_by text
+);
+
+comment on table public.local_residents is 'Comptes locaux en attente/valides sans OAuth (URL profil Facebook).';
+
 -- 3) RLS : activer la sécurité au niveau des lignes
 alter table public.residents enable row level security;
 
