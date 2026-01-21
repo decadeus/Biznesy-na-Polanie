@@ -449,6 +449,65 @@ app.post("/api/login/profile", (req, res) => {
     return uUrl && normalize(uUrl) === normalized;
   });
 
+  if (!user && supabaseAdmin) {
+    supabaseAdmin
+      .from("local_residents")
+      .select("*")
+      .eq("facebook_profile_url", normalized)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Erreur local_residents lookup:", error.message);
+        }
+        if (!data) {
+          return res.json({
+            authenticated: false,
+            user: null,
+            needOnboarding: true,
+            facebookProfileUrl: normalized
+          });
+        }
+        const mapped = {
+          id: data.id,
+          supabaseUserId: null,
+          name: data.display_name || "Résident",
+          avatarUrl:
+            data.avatar_url ||
+            "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=200",
+          facebookProfileUrl: data.facebook_profile_url || null,
+          status: data.status || "pending",
+          role: data.role || "resident",
+          createdAt: data.created_at || new Date().toISOString(),
+          lastLoginAt: data.last_login_at || null
+        };
+        const existingIndex = users.findIndex(
+          (u) => Number(u.id) === Number(mapped.id)
+        );
+        if (existingIndex === -1) {
+          users.push(mapped);
+        } else {
+          users[existingIndex] = mapped;
+        }
+        mapped.lastLoginAt = new Date().toISOString();
+        createSession(res, mapped.id);
+        return res.json({
+          authenticated: mapped.status === "active",
+          user: toPublicUser(mapped),
+          status: mapped.status
+        });
+      })
+      .catch((err) => {
+        console.error("Erreur local_residents lookup:", err);
+        return res.json({
+          authenticated: false,
+          user: null,
+          needOnboarding: true,
+          facebookProfileUrl: normalized
+        });
+      });
+    return;
+  }
+
   if (!user) {
     return res.json({
       authenticated: false,
