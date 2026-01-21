@@ -86,6 +86,12 @@ function parseCookies(req) {
   return cookies;
 }
 
+function normalizeFacebookUrl(url) {
+  return String(url || "")
+    .trim()
+    .replace(/\/+$/, "");
+}
+
 function createSession(res, userId) {
   const token = crypto.randomBytes(24).toString("hex");
   const now = new Date().toISOString();
@@ -229,7 +235,7 @@ app.post("/api/onboarding/complete", (req, res) => {
     const trimmedName = String(name || "").trim();
     const now = new Date().toISOString();
     const isFirst = users.length === 0;
-    const safeFacebookUrl = String(facebookProfileUrl).slice(0, 400);
+    const safeFacebookUrl = normalizeFacebookUrl(facebookProfileUrl).slice(0, 400);
     const autoApprove =
       safeFacebookUrl &&
       safeFacebookUrl.startsWith(DEV_AUTO_APPROVE_PROFILE_URL);
@@ -266,7 +272,7 @@ app.post("/api/onboarding/complete", (req, res) => {
       .json({ error: "Ce compte n'est pas en attente d'onboarding." });
   }
 
-  const safeFacebookUrl = String(facebookProfileUrl).slice(0, 400);
+  const safeFacebookUrl = normalizeFacebookUrl(facebookProfileUrl).slice(0, 400);
   user.facebookProfileUrl = safeFacebookUrl;
 
   const autoApprove =
@@ -441,19 +447,19 @@ app.post("/api/login/profile", (req, res) => {
       .json({ error: "Merci de renseigner l'URL de votre profil Facebook." });
   }
 
-  const normalize = (url) => url.replace(/\/+$/, "");
-  const normalized = normalize(raw);
+  const normalized = normalizeFacebookUrl(raw);
 
   const user = users.find((u) => {
     const uUrl = (u.facebookProfileUrl || "").toString().trim();
-    return uUrl && normalize(uUrl) === normalized;
+    return uUrl && normalizeFacebookUrl(uUrl) === normalized;
   });
 
   if (!user && supabaseAdmin) {
+    const normalizedWithSlash = normalized + "/";
     supabaseAdmin
       .from("local_residents")
       .select("*")
-      .eq("facebook_profile_url", normalized)
+      .in("facebook_profile_url", [normalized, normalizedWithSlash])
       .maybeSingle()
       .then(({ data, error }) => {
         if (error) {

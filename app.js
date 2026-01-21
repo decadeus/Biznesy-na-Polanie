@@ -2147,6 +2147,8 @@ function App() {
     }
     const shouldShowFacebookButton =
       supabaseSessionChecked && !publicUser;
+    const enableProfileUrlLogin =
+      typeof window !== "undefined" && window.enableProfileUrlLogin === true;
     return e(
       React.Fragment,
       null,
@@ -2206,7 +2208,7 @@ function App() {
           onFacebookLogin: shouldShowFacebookButton
             ? handleSupabaseFacebookLogin
             : null,
-          onProfileUrlLogin: handleProfileUrlLogin
+          onProfileUrlLogin: enableProfileUrlLogin ? handleProfileUrlLogin : null
         })
       ),
       e(
