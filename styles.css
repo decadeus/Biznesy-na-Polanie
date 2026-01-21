@@ -3211,6 +3211,33 @@ body {
   padding: 0 24px 32px;
 }
 
+.public-footer {
+  max-width: 1120px;
+  margin: 0 auto 40px;
+  padding: 0 24px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.public-footer-link {
+  color: #475569;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.public-footer-link:hover {
+  color: #0f172a;
+  text-decoration: underline;
+}
+
+.public-footer-sep {
+  color: #cbd5f5;
+}
+
 .public-home-grid {
   margin-top: 24px;
   display: grid;

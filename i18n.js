@@ -493,6 +493,9 @@
       hero_residence_fallback_name: "Osiedle Mały Kack – Gdynia",
       hero_welcome_prefix: "Bienvenue à",
       public_go_welcome: "Aller à l'espace",
+      footer_privacy: "Politique de confidentialite",
+      footer_data_deletion: "Suppression des donnees",
+      footer_terms: "Conditions de service",
 
       about_title: "À propos du site – comment ça marche ?",
       about_intro_1:
@@ -1118,6 +1121,9 @@
       hero_residence_fallback_name: "Osiedle Mały Kack – Gdynia",
       hero_welcome_prefix: "Welcome to",
       public_go_welcome: "Go to welcome",
+      footer_privacy: "Privacy policy",
+      footer_data_deletion: "Data deletion",
+      footer_terms: "Terms of service",
 
       about_title: "About this site – how it works?",
       about_intro_1:
@@ -1748,6 +1754,9 @@
       hero_residence_fallback_name: "Osiedle Mały Kack – Gdynia",
       hero_welcome_prefix: "Witamy w",
       public_go_welcome: "Przejdź do powitania",
+      footer_privacy: "Polityka prywatnosci",
+      footer_data_deletion: "Usuniecie danych",
+      footer_terms: "Warunki korzystania z uslugi",
 
       about_title: "O serwisie – jak to działa?",
       about_intro_1:

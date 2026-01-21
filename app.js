@@ -2207,6 +2207,27 @@ function App() {
             ? handleSupabaseFacebookLogin
             : null
         })
+      ),
+      e(
+        "footer",
+        { className: "public-footer" },
+        e(
+          "a",
+          { className: "public-footer-link", href: "/privacy.html" },
+          t(lang, "footer_privacy")
+        ),
+        e("span", { className: "public-footer-sep" }, "•"),
+        e(
+          "a",
+          { className: "public-footer-link", href: "/data-deletion.html" },
+          t(lang, "footer_data_deletion")
+        ),
+        e("span", { className: "public-footer-sep" }, "•"),
+        e(
+          "a",
+          { className: "public-footer-link", href: "/terms.html" },
+          t(lang, "footer_terms")
+        )
       )
     );
   }
