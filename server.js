@@ -379,12 +379,15 @@ app.post("/api/auth/supabase-login", async (req, res) => {
       resident = insertResult.data;
     } else {
       // Mettre à jour les infos de base + last_login_at
+      // et auto-activer si encore en pending (mode ouverture temporaire)
       const updateResult = await supabaseAdmin
         .from("residents")
         .update({
           display_name: displayName,
           avatar_url: avatarUrl,
-          last_login_at: now
+          last_login_at: now,
+          status: "active",
+          approved_at: resident.approved_at || now
         })
         .eq("id", supaId)
         .select("*")
