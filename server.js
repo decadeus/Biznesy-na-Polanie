@@ -92,6 +92,56 @@ function normalizeFacebookUrl(url) {
     .replace(/\/+$/, "");
 }
 
+function buildFacebookProfileUrl(supaUser) {
+  if (!supaUser) return null;
+  const metadata = supaUser.user_metadata || {};
+  const identities = Array.isArray(supaUser.identities)
+    ? supaUser.identities
+    : [];
+  const fbIdentity = identities.find(
+    (identity) => identity && identity.provider === "facebook"
+  );
+  const identityData =
+    fbIdentity && fbIdentity.identity_data ? fbIdentity.identity_data : {};
+
+  const directUrl =
+    metadata.facebook_profile_url ||
+    metadata.profile_url ||
+    identityData.profile_url ||
+    identityData.profileUrl ||
+    null;
+  if (directUrl) {
+    return normalizeFacebookUrl(directUrl);
+  }
+
+  const fbId =
+    identityData.user_id ||
+    identityData.id ||
+    identityData.sub ||
+    identityData.fb_id ||
+    identityData.provider_id ||
+    null;
+  if (fbId && /^[0-9]+$/.test(String(fbId))) {
+    return normalizeFacebookUrl(
+      "https://www.facebook.com/profile.php?id=" + String(fbId)
+    );
+  }
+
+  const username =
+    metadata.user_name ||
+    metadata.username ||
+    identityData.user_name ||
+    identityData.username ||
+    null;
+  if (username && /^[A-Za-z0-9._-]+$/.test(String(username))) {
+    return normalizeFacebookUrl(
+      "https://www.facebook.com/" + String(username)
+    );
+  }
+
+  return null;
+}
+
 function createSession(res, userId) {
   const token = crypto.randomBytes(24).toString("hex");
   const now = new Date().toISOString();
@@ -330,6 +380,7 @@ app.post("/api/auth/supabase-login", async (req, res) => {
     const supaUser = data.user;
     const supaId = supaUser.id;
     const metadata = supaUser.user_metadata || {};
+    const computedFacebookUrl = buildFacebookProfileUrl(supaUser);
 
     const displayName =
       metadata.full_name ||
@@ -358,6 +409,7 @@ app.post("/api/auth/supabase-login", async (req, res) => {
           id: supaId,
           display_name: displayName,
           avatar_url: avatarUrl,
+          facebook_profile_url: computedFacebookUrl || null,
           status: "active",
           role: "resident",
           created_at: now,
@@ -385,6 +437,8 @@ app.post("/api/auth/supabase-login", async (req, res) => {
         .update({
           display_name: displayName,
           avatar_url: avatarUrl,
+          facebook_profile_url:
+            resident.facebook_profile_url || computedFacebookUrl || null,
           last_login_at: now,
           status: "active",
           approved_at: resident.approved_at || now
