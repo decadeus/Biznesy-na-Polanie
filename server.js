@@ -351,14 +351,14 @@ app.post("/api/auth/supabase-login", async (req, res) => {
     let resident = residentRow;
 
     if (!resident) {
-      // Créer un résident en attente si aucun enregistrement n'existe encore
+      // Créer un résident actif par défaut (mode ouverture temporaire)
       const insertResult = await supabaseAdmin
         .from("residents")
         .insert({
           id: supaId,
           display_name: displayName,
           avatar_url: avatarUrl,
-          status: "pending",
+          status: "active",
           role: "resident",
           created_at: now,
           last_login_at: now
