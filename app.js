@@ -2194,6 +2194,15 @@ function App() {
                   : handleResumeSessionToWelcome
               },
               t(lang, "public_go_welcome")
+            ),
+            e(
+              "button",
+              {
+                type: "button",
+                className: "public-topbar-logout-btn",
+                onClick: handleLogoutToHome
+              },
+              t(lang, "public_logout")
             )
           )
       ),

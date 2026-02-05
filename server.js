@@ -154,7 +154,8 @@ function createSession(res, userId) {
   res.cookie("sessionToken", token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: false // pour du local seulement – à adapter en prod
+    secure: false, // pour du local seulement – à adapter en prod
+    path: "/"
   });
 }
 
@@ -178,11 +179,14 @@ function destroySession(req, res) {
   if (token && sessions[token]) {
     delete sessions[token];
   }
+  res.clearCookie("sessionToken", { path: "/" });
   res.cookie("sessionToken", "", {
     httpOnly: true,
     sameSite: "lax",
     secure: false,
-    expires: new Date(0)
+    expires: new Date(0),
+    maxAge: 0,
+    path: "/"
   });
 }
 

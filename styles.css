@@ -3236,6 +3236,23 @@ body {
   transform: translateY(-1px);
 }
 
+.public-topbar-logout-btn {
+  border: 1px solid #cbd5f5;
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: #f8fafc;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.public-topbar-logout-btn:hover {
+  background: #e2e8f0;
+  transform: translateY(-1px);
+}
+
 .public-topbar-link {
   border: none;
   background: transparent;
