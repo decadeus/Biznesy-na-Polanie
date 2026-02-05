@@ -182,6 +182,7 @@ function MainMenu(props) {
     btn("home", t(lang, "menu_home")),
     btn("myPosts", t(lang, "menu_my_posts")),
     btn("about", t(lang, "menu_about")),
+    btn("changelog", t(lang, "menu_changelog")),
     btn("feedback", t(lang, "menu_feedback"))
   );
 }
@@ -301,7 +302,7 @@ function App() {
       : function (_lang, key) {
           return key;
         };
-  const [mainPage, setMainPage] = useState("home"); // "home" | "about" | "feedback"
+  const [mainPage, setMainPage] = useState("home"); // "home" | "about" | "changelog" | "feedback"
   const isDevEnv =
     typeof window !== "undefined" &&
     (window.location.hostname === "localhost" ||
@@ -2420,7 +2421,7 @@ function App() {
           })
         );
   } else {
-    // Vue dashboard : on bascule en fonction de mainPage (home / about / feedback)
+    // Vue dashboard : on bascule en fonction de mainPage (home / about / changelog / feedback)
     if (mainPage === "myPosts") {
       leftContent = e(
         "div",
@@ -2441,6 +2442,12 @@ function App() {
         "div",
         { className: "page-sections" },
         e(AboutSiteSection, { lang })
+      );
+    } else if (mainPage === "changelog") {
+      leftContent = e(
+        "div",
+        { className: "page-sections" },
+        e(ChangelogSection, { lang })
       );
     } else if (mainPage === "feedback") {
       leftContent = e(
@@ -2550,7 +2557,10 @@ function App() {
     null,
     e(
       "div",
-      { className: "dashboard" },
+      {
+        className:
+          "dashboard" + (mainPage === "home" ? " dashboard-page-home" : "")
+      },
       e(
         "div",
         { className: "dashboard-hero" },

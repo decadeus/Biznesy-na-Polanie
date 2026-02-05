@@ -287,8 +287,17 @@
 
       menu_home: "Accueil",
       menu_about: "Infos sur le site",
+      menu_changelog: "Évolutions",
       menu_feedback: "Contact / idées",
       menu_my_posts: "Mes publications",
+      changelog_title: "Évolutions du site",
+      changelog_intro:
+        "Suivi des corrections, améliorations et nouvelles fonctionnalités.",
+      changelog_empty: "Aucune évolution publiée pour le moment.",
+      changelog_type_feature: "Fonctionnalité",
+      changelog_type_news: "Nouveauté",
+      changelog_type_bug: "Bug",
+      changelog_type_improvement: "Amélioration",
       sections_nav_placeholder: "Aller vers une section…",
 
       profile_default_name: "Résident de Mały Kack",
@@ -931,8 +940,16 @@
 
       menu_home: "Home",
       menu_about: "About the site",
+      menu_changelog: "Updates",
       menu_feedback: "Contact / ideas",
       menu_my_posts: "My posts",
+      changelog_title: "Site updates",
+      changelog_intro: "Track fixes, improvements, and new features.",
+      changelog_empty: "No updates published yet.",
+      changelog_type_feature: "Feature",
+      changelog_type_news: "News",
+      changelog_type_bug: "Bug",
+      changelog_type_improvement: "Improvement",
       sections_nav_placeholder: "Go to a section…",
 
       profile_default_name: "Mały Kack resident",
@@ -1565,8 +1582,17 @@
 
       menu_home: "Strona główna",
       menu_about: "O serwisie",
+      menu_changelog: "Zmiany",
       menu_feedback: "Kontakt / pomysły",
       menu_my_posts: "Moje wpisy",
+      changelog_title: "Zmiany w serwisie",
+      changelog_intro:
+        "Lista poprawek, usprawnień i nowych funkcji.",
+      changelog_empty: "Brak opublikowanych zmian.",
+      changelog_type_feature: "Funkcja",
+      changelog_type_news: "Nowość",
+      changelog_type_bug: "Błąd",
+      changelog_type_improvement: "Usprawnienie",
       sections_nav_placeholder: "Przejdź do sekcji…",
 
       profile_default_name: "Mieszkaniec Mały Kack",
