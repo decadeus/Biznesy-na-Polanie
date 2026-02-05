@@ -2071,6 +2071,18 @@ function App() {
           console.warn("Erreur supabase.auth.signOut:", e);
         }
       }
+
+      // Nettoyage du stockage local lié au profil / session
+      try {
+        if (window.localStorage) {
+          window.localStorage.removeItem("profileName");
+          window.localStorage.removeItem("profileAvatar");
+          window.localStorage.removeItem("residentId");
+        }
+        if (window.sessionStorage) {
+          window.sessionStorage.clear();
+        }
+      } catch (e) {}
     } finally {
       setCurrentUser(null);
       setSupabaseUser(null);
