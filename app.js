@@ -2626,6 +2626,15 @@ function App() {
             },
             t(lang, "dashboard_back_home")
           ),
+          e(
+            "button",
+            {
+              type: "button",
+              className: "dashboard-hero-back",
+              onClick: handleLogoutToHome
+            },
+            t(lang, "dashboard_logout")
+          ),
           e(LangSwitcher, {
             lang,
             onChange: setLang,

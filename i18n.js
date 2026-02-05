@@ -37,6 +37,7 @@
       dashboard_hero_subtitle:
         "Infos pratiques, bus, météo et vie de la résidence.",
       dashboard_back_home: "Revenir à la page d'accueil",
+      dashboard_logout: "Se déconnecter",
 
       topbar_login_fb: "Se connecter avec Facebook",
       topbar_dev_access: "Accès temporaire",
@@ -693,6 +694,7 @@
       dashboard_hero_subtitle:
         "Practical info, buses, weather and the life of the residence.",
       dashboard_back_home: "Back to home page",
+      dashboard_logout: "Log out",
 
       topbar_login_fb: "Sign in with Facebook",
       topbar_dev_access: "Temporary access",
@@ -1329,6 +1331,7 @@
       dashboard_hero_subtitle:
         "Informacje praktyczne, rozkład jazdy autobusów, pogoda i życie osiedla.",
       dashboard_back_home: "Powrót do strony głównej",
+      dashboard_logout: "Wyloguj się",
 
       topbar_login_fb: "Zaloguj się przez Facebooka",
       topbar_dev_access: "Dostęp tymczasowy",
