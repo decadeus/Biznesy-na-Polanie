@@ -271,7 +271,7 @@ function App() {
   const [creatingPoll, setCreatingPoll] = useState(false);
   const [showPollModal, setShowPollModal] = useState(false);
   const [residentId] = useState(() => getOrCreateResidentId());
-  const [adminView, setAdminView] = useState("members"); // "members", "pendingUsers", "stats"
+  const [adminView, setAdminView] = useState("members"); // "members", "pendingUsers", "stats", "eventLog"
   const [selectedShop, setSelectedShop] = useState(null);
   const [showShopModal, setShowShopModal] = useState(false);
   const [members, setMembers] = useState([]);
@@ -638,6 +638,19 @@ function App() {
     return fallback;
   }
 
+  async function logEvent(payload) {
+    try {
+      if (!currentUser || !currentUser.id) return;
+      await fetch("/api/event-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload || {})
+      });
+    } catch (e) {
+      // Journal d'activité non critique
+    }
+  }
+
   async function uploadPostImage(file, folder) {
     if (!file) return null;
     if (!supabase) {
@@ -917,6 +930,11 @@ function App() {
       const created = data ? mapReportRow(data) : null;
       if (created) {
       setReports((prev) => [created, ...(prev || [])]);
+      logEvent({
+        eventType: "post_created",
+        postType: "reports",
+        title: created.title || payload.title || ""
+      });
       }
     } catch (e) {
       console.error(e);
@@ -968,6 +986,11 @@ function App() {
       const created = data ? mapServiceRow(data) : null;
       if (created) {
       setServices((prev) => [created, ...(prev || [])]);
+      logEvent({
+        eventType: "post_created",
+        postType: "services",
+        title: created.title || payload.title || ""
+      });
       }
     } catch (e) {
       console.error(e);
@@ -1105,6 +1128,11 @@ function App() {
       const created = data ? mapPollRow(data) : null;
       if (created) {
       setPolls((prev) => [created, ...(prev || [])]);
+      logEvent({
+        eventType: "post_created",
+        postType: "polls",
+        title: created.title || payload.title || ""
+      });
       }
       setShowPollModal(false);
     } catch (e) {
@@ -1219,6 +1247,11 @@ function App() {
       const created = data ? mapEventRow(data) : null;
       if (created) {
       setEvents((prev) => [created, ...(prev || [])]);
+      logEvent({
+        eventType: "post_created",
+        postType: "events",
+        title: created.title || payload.title || ""
+      });
       }
       setShowEventModal(false);
     } catch (e) {
@@ -1285,6 +1318,11 @@ function App() {
         : null;
       if (created) {
         setShops((prev) => [created, ...(prev || [])]);
+        logEvent({
+          eventType: "post_created",
+          postType: "shops",
+          title: created.name || payload.name || ""
+        });
       }
       setEditingShop(null);
       return true;
@@ -1425,6 +1463,11 @@ function App() {
       const created = data ? mapClassifiedRow(data) : null;
       if (created) {
       setClassifieds((prev) => [created, ...prev]);
+      logEvent({
+        eventType: "post_created",
+        postType: "classifieds",
+        title: created.title || formTitle || ""
+      });
       }
       setFormTitle("");
       setFormDescription("");
@@ -2430,6 +2473,12 @@ function App() {
             onCountChange: setPendingRequestsCount,
             lang
           })
+        )
+      : effectiveAdminView === "eventLog"
+      ? e(
+          "div",
+          { className: "page-sections" },
+          e(EventLogSection, { lang })
         )
       : e(
           "div",

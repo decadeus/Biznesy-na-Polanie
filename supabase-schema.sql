@@ -486,3 +486,43 @@ for all
 using (true)
 with check (true);
 
+-- 6) Journal d'activité (inscriptions + publications)
+create table if not exists public.event_logs (
+  id          uuid primary key default gen_random_uuid(),
+  event_type  text not null, -- 'signup' | 'post_created'
+  post_type   text,          -- 'events' | 'reports' | ...
+  title       text,
+  actor_id    text,
+  actor_name  text,
+  created_at  timestamptz default now()
+);
+
+create index if not exists event_logs_created_at_idx
+on public.event_logs(created_at desc);
+
+alter table public.event_logs enable row level security;
+
+drop policy if exists "event_logs_staff_select" on public.event_logs;
+create policy "event_logs_staff_select"
+on public.event_logs
+for select
+using (
+  exists (
+    select 1 from public.residents r
+    where r.id = auth.uid()
+      and r.role in ('moderator', 'admin', 'super_admin')
+  )
+);
+
+drop policy if exists "event_logs_staff_insert" on public.event_logs;
+create policy "event_logs_staff_insert"
+on public.event_logs
+for insert
+with check (
+  exists (
+    select 1 from public.residents r
+    where r.id = auth.uid()
+      and r.role in ('moderator', 'admin', 'super_admin')
+  )
+);
+

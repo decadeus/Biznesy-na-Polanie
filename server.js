@@ -47,6 +47,48 @@ let sessions = {};
 let users = [];
 let nextUserId = 1;
 
+// Journal d'événements (mémoire volatile)
+const EVENT_LOG_LIMIT = 200;
+let eventLogs = [];
+
+function addEventLog(entry) {
+  if (!entry) return;
+  const payload = Object.assign(
+    {
+      id: crypto.randomBytes(12).toString("hex"),
+      createdAt: new Date().toISOString()
+    },
+    entry
+  );
+  eventLogs.unshift(payload);
+  if (eventLogs.length > EVENT_LOG_LIMIT) {
+    eventLogs = eventLogs.slice(0, EVENT_LOG_LIMIT);
+  }
+  if (supabaseAdmin) {
+    supabaseAdmin
+      .from("event_logs")
+      .insert({
+        event_type: payload.eventType || null,
+        post_type: payload.postType || null,
+        title: payload.title || null,
+        actor_id:
+          payload.actorId !== undefined && payload.actorId !== null
+            ? String(payload.actorId)
+            : null,
+        actor_name: payload.actorName || null,
+        created_at: payload.createdAt || new Date().toISOString()
+      })
+      .then(({ error }) => {
+        if (error) {
+          console.error("Erreur insertion event_logs:", error.message);
+        }
+      })
+      .catch((err) => {
+        console.error("Erreur insertion event_logs:", err);
+      });
+  }
+}
+
 // Pas de données de démonstration par défaut : on liste uniquement
 // les vraies demandes envoyées via le formulaire d'onboarding.
 
@@ -307,6 +349,11 @@ app.post("/api/onboarding/complete", (req, res) => {
       lastLoginAt: null
     };
     users.push(newUser);
+    addEventLog({
+      eventType: "signup",
+      actorId: newUser.id,
+      actorName: newUser.name
+    });
     syncLocalResident(newUser, {
       group_name: groupName.trim()
     });
@@ -404,6 +451,7 @@ app.post("/api/auth/supabase-login", async (req, res) => {
 
     const now = new Date().toISOString();
     let resident = residentRow;
+    const wasCreated = !resident;
 
     if (!resident) {
       // Créer un résident actif par défaut (mode ouverture temporaire)
@@ -468,6 +516,14 @@ app.post("/api/auth/supabase-login", async (req, res) => {
       createdAt: resident.created_at || now,
       lastLoginAt: resident.last_login_at || now
     };
+
+    if (wasCreated) {
+      addEventLog({
+        eventType: "signup",
+        actorId: user.id,
+        actorName: user.name
+      });
+    }
 
     // On synchronise également notre tableau en mémoire pour les routes existantes
     const existingIndex = users.findIndex((u) => u.supabaseUserId === supaId);
@@ -627,6 +683,56 @@ app.post("/auth/dev-login", (req, res) => {
 });
 
 // Espace modérateur : gestion des comptes en attente
+app.post("/api/event-log", requireAuth, (req, res) => {
+  const { eventType, postType, title } = req.body || {};
+  if (!eventType) {
+    return res.status(400).json({ error: "eventType manquant." });
+  }
+  if (eventType !== "post_created") {
+    return res.status(400).json({ error: "eventType non supporté." });
+  }
+  const user = req.currentUser || {};
+  addEventLog({
+    eventType,
+    postType: postType ? String(postType).slice(0, 40) : null,
+    title: title ? String(title).slice(0, 160) : null,
+    actorId: user.id || null,
+    actorName: user.name || "Résident"
+  });
+  return res.json({ ok: true });
+});
+
+app.get("/api/admin/event-log", requireModerator, (req, res) => {
+  if (!supabaseAdmin) {
+    return res.json({ items: eventLogs });
+  }
+  supabaseAdmin
+    .from("event_logs")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(EVENT_LOG_LIMIT)
+    .then(({ data, error }) => {
+      if (error) {
+        console.error("Erreur chargement event_logs:", error.message);
+        return res.json({ items: eventLogs });
+      }
+      const mapped = (data || []).map((row) => ({
+        id: row.id,
+        eventType: row.event_type || null,
+        postType: row.post_type || null,
+        title: row.title || null,
+        actorId: row.actor_id || null,
+        actorName: row.actor_name || null,
+        createdAt: row.created_at || null
+      }));
+      return res.json({ items: mapped });
+    })
+    .catch((err) => {
+      console.error("Erreur chargement event_logs:", err);
+      return res.json({ items: eventLogs });
+    });
+});
+
 app.get("/api/admin/pending-users", requireModerator, (req, res) => {
   if (!supabaseAdmin) {
     const pending = users

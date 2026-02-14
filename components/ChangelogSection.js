@@ -11,6 +11,26 @@ function ChangelogSection(props) {
   const locale = lang === "pl" ? "pl-PL" : lang === "en" ? "en-GB" : "fr-FR";
 
   const entries = [
+    {
+      date: "2026-02-14",
+      type: "improvement",
+      title: {
+        fr: "Votes et tri des publications",
+        en: "Post voting and sorting",
+        pl: "Głosowanie i sortowanie publikacji"
+      },
+      items: {
+        fr: [
+          "Bientôt, vous pourrez voter sur les publications et les trier par date ou par « j’aime »."
+        ],
+        en: [
+          "Soon, you will be able to vote on posts and sort them by date or by likes."
+        ],
+        pl: [
+          "Wkrótce będzie można głosować na publikacje i sortować je według daty lub liczby polubień."
+        ]
+      }
+    },
   
     {
       date: "2026-02-04",

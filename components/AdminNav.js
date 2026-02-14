@@ -50,7 +50,8 @@ function AdminNav(props) {
             ? t(lang, "admin_nav_pending") + " (" + pendingCount + ")"
             : t(lang, "admin_nav_pending")
         ),
-        item("stats", t(lang, "admin_nav_stats"))
+        item("stats", t(lang, "admin_nav_stats")),
+        item("eventLog", t(lang, "admin_nav_eventlog"))
       )
     )
   );
